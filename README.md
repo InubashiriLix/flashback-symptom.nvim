@@ -1,4 +1,4 @@
-# flashback-symptom.nvim
+
 
 **English** | [简体中文](./README.zh-CN.md)
 
@@ -14,6 +14,13 @@ A Neovim plugin to simulate the pain of flashback.
 > and imagery of self-harm and death, flashed at you while you work.
 > See [Content & safety](#content--safety). The neutral, feature-complete
 > example is [`examples/showcase.jsonc`](./examples/showcase.jsonc).
+
+> Demo Video:
+
+
+https://github.com/user-attachments/assets/b04e2e1e-671a-456c-acf7-7d19c0286e99
+
+
 
 Coloured "murmurs" pop up out of nowhere while you edit. They type themselves
 out, glitch, flicker, drift, stack shadows, and occasionally hijack your keyboard
