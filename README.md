@@ -8,6 +8,13 @@ A Neovim plugin to simulate the pain of flashback.
 > This plugin is just for fun or simulation.
 > It will not increase your mental capacity, or working efficiency.
 
+> [!CAUTION]
+> **Content warning.** The material shipped by default is the author's own
+> experimental writing about intrusive thoughts: second person, self-hatred,
+> and imagery of self-harm and death, flashed at you while you work.
+> See [Content & safety](#content--safety). The neutral, feature-complete
+> example is [`examples/showcase.jsonc`](./examples/showcase.jsonc).
+
 Coloured "murmurs" pop up out of nowhere while you edit. They type themselves
 out, glitch, flicker, drift, stack shadows, and occasionally hijack your keyboard
 until you retype the prompt character for character.
@@ -151,11 +158,47 @@ fb.reload_murmurs()   -- after editing the material file
 fb.is_running()       fb.stats_summary()
 ```
 
+## Content & safety
+
+The default material in [`data/murmurs.jsonc`](./data/murmurs.jsonc) is **not**
+a feature demo — it is the author's self-expression: a second-person voice that
+accuses, escalates, and quotes intrusive thoughts back at the reader.
+
+- It is **experimental fiction**. Not a diagnosis, not a description of anyone's
+  clinical state, and not advice.
+- The author's own symptoms are mild. The material is deliberately dramatised
+  and intensified for effect.
+- Installing the plugin means these lines appear on your screen while you work,
+  without warning, several times a minute.
+- If you want the mechanics without the content, point `murmurs_path` at the
+  neutral, feature-complete [`examples/showcase.jsonc`](./examples/showcase.jsonc).
+
+If you recognise any of it in yourself, please tell someone who can answer.
+[findahelpline.com](https://findahelpline.com/) lists free lines by country.
+In mainland China: **12356** (全国心理援助热线) or **010-82951332**
+(北京心理危机研究与干预中心). Using them is not a weakness.
+
+This material is published as art, not as a recommendation to run it on
+yourself.
+
+## Pacing
+
+The defaults fire often — 3 timers on a 4-second base interval — because the
+whole point is to be intrusive. If you would rather keep your focus:
+
+```lua
+require("flashback").setup({
+  timer = { timer_num = 1, interval_ms = 60000, jitter = 0.5 },
+})
+```
+
 ## Murmur material
 
 Material is **JSONC**: comments (`//`, `/* */`) and trailing commas are allowed.
-The plugin ships [`data/murmurs.jsonc`](./data/murmurs.jsonc) as a default; a
-much more thorough reference lives in
+
+The shipped default is [`data/murmurs.jsonc`](./data/murmurs.jsonc) — the
+author's self-expression set (see [Content & safety](#content--safety)).
+The feature-complete, neutral reference lives in
 [`examples/showcase.jsonc`](./examples/showcase.jsonc).
 
 ```jsonc

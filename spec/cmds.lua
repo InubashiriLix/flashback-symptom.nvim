@@ -43,13 +43,34 @@ check(next(material.palette) ~= nil, "palette parsed")
 check(next(material.presets) ~= nil, "presets parsed")
 check(next(material.glyph_pools) ~= nil, "glyph pools parsed")
 
-local preset_applied = false
-for _, m in ipairs(material.murmurs) do
-    if m.text == "你确定这里不需要判空吗？" then
-        preset_applied = type(m.style) == "table" and m.style.fg == "blood" and type(m.effects.glitch) == "table"
-    end
-end
-check(preset_applied, "preset style + effects merged")
+-- preset merging is tested with a synthetic material so the test never depends
+-- on whatever the shipped default happens to say.
+local tmp = vim.fn.tempname() .. ".jsonc"
+local fh = io.open(tmp, "w")
+fh:write([[
+{
+  "palette": { "blood": "#ff5555" },
+  "presets": {
+    "p": {
+      "style": { "fg": "blood" },
+      "effects": { "glitch": { "color": "#ff00ff", "density": 0.2 } }
+    }
+  },
+  "murmurs": [
+    { "text": "merged", "preset": "p", "style": { "bg": "#000000" },
+      "effects": { "glitch": { "density": 0.9 } } },
+  ],
+}
+]])
+fh:close()
+local synthetic = json_parser.load(tmp)
+vim.fn.delete(tmp)
+local sm = synthetic and synthetic.murmurs and synthetic.murmurs[1]
+check(sm ~= nil, "synthetic material parses")
+check(sm and sm.style.fg == "blood", "preset style merged")
+check(sm and sm.style.bg == "#000000", "murmur style overrides the preset")
+check(sm and sm.effects.glitch and sm.effects.glitch.density == 0.9, "murmur effect params override the preset")
+check(sm and sm.effects.glitch and sm.effects.glitch.color == "#ff00ff", "non-overridden preset params survive")
 
 local trapped = false
 for _, m in ipairs(material.murmurs) do

@@ -1,5 +1,14 @@
 # Examples
 
+Two different things live here:
+
+- [`showcase.jsonc`](./showcase.jsonc) — the **neutral, feature-complete**
+  reference. Every built-in effect, every display mode, no strong content.
+- The shipped **default** material lives at
+  [`../data/murmurs.jsonc`](../data/murmurs.jsonc). It is the author's
+  self-expression set and carries a content warning; see the main README's
+  *Content & safety* section.
+
 ## `showcase.jsonc`
 
 A deliberately exhaustive material file. Use it as a reference, or point

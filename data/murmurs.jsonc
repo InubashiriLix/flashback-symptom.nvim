@@ -1,154 +1,578 @@
 {
-  // 这份文件就是 flashback-symptom.nvim 的「素材」。写注释也可以（JSONC）。
-  // $schema 指向仓库里的 schema —— 装了 jsonls 就会有补全和校验。
+  // ===========================================================================
+  //  flashback-symptom.nvim  —— 默认素材 · 作者的自我表达版本
+  //
+  //  ⚠ 内容警告
+  //  以下文本是作者围绕「侵入性思维 / 闪回」做的实验性书写：第二人称、自我否定，
+  //  包含自伤与死亡的意象，以及直接的自我攻击语句。
+  //  作者本人的真实症状很轻微 —— 这些是刻意加重后的表达，不是诊断，也不是建议。
+  //  如果你正在经历类似的东西，请去找一个会回话的人聊聊；
+  //  README 的「内容与安全」一节列了求助渠道。
+  //
+  //  完整的功能示例（全部 18 个特效 / 三种显示模式）见：
+  //    examples/showcase.jsonc
+  //
+  //  文件是 JSONC —— 允许注释与尾逗号。
+  // ===========================================================================
+
   "$schema": "https://raw.githubusercontent.com/InubashiriLix/flashback-symptom.nvim/main/schema/murmurs.schema.json",
 
   // ---------------------------------------------------------------------------
-  // palette：给颜色起名字，下面 style 里直接写名字即可
+  // palette：给颜色起名字。style 里可以写名字，也可以直接写 #RRGGBB
   // ---------------------------------------------------------------------------
   "palette": {
     "blood": "#ff5555",
-    "ice": "#8be9fd",
-    "moss": "#50fa7b",
+    "ember": "#ff8800",
+    "amber": "#ffb86c",
     "sun": "#f1fa8c",
+    "moss": "#50fa7b",
+    "ice": "#8be9fd",
+    "azure": "#61afef",
     "grape": "#bd93f9",
     "rose": "#ff79c6",
-    "amber": "#ffb86c",
-    "ink": "#1a0000"
+    "ash": "#6272a4",
+    "ink": "#140b1a",
+    "void": "#000000",
   },
 
   // ---------------------------------------------------------------------------
-  // glyph_pools：乱码字符池，glitch / decay 的 pool 参数引用这些名字
+  // glyph_pools：乱码字符池，glitch / decay 的 pool 参数按名字引用
+  //   也可以不走名字池，直接在 pool 里写数组
   // ---------------------------------------------------------------------------
   "glyph_pools": {
-    "katakana": ["ﾊ", "ﾋ", "ﾌ", "ﾍ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ"],
-    "blocks": ["░", "▒", "▓", "█", "▚", "▞"],
-    "symbols": ["※", "∷", "∴", "⌁", "％", "＃", "＠", "＆", "＊"]
+    "katakana": ["ﾊ", "ﾋ", "ﾌ", "ﾍ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ", "ﾔ", "ﾕ"],
+    "blocks": ["░", "▒", "▓", "█", "▚", "▞", "▛", "▜"],
+    "runes": ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ"],
+    "math": ["∀", "∃", "∅", "∈", "∑", "∏", "√", "∞", "≈", "≠"],
+    "junk": ["#", "%", "@", "&", "*", "?", "!", "^", "~"],
   },
 
   // ---------------------------------------------------------------------------
-  // presets：一组 style + effects 的打包，murmur 用 "preset" 一键套用
+  // presets：一组 style + effects 的打包。murmur 用 "preset" 引用，
+  //          然后可以用自己的 style / effects 覆盖其中任意一项
   // ---------------------------------------------------------------------------
   "presets": {
+    "calm": {
+      "style": { "fg": "ice", "attrs": ["italic"] },
+      "effects": {
+        "typewriter": { "speed": 60 },
+        "pulse": { "min": 0, "max": 35, "period": 1600 },
+      },
+    },
+
+    "dreamy": {
+      "style": { "fg": "grape" },
+      "effects": {
+        "typewriter": { "speed": 45 },
+        "rainbow": { "speed": 14, "per_char": true },
+        "drift": { "dx": 1, "dy": 1, "period": 4200 },
+        "shadow": { "dx": 1, "dy": 1, "color": "#12001e", "blend": 70 },
+      },
+    },
+
     "horror": {
       "style": { "fg": "blood", "bg": "ink", "attrs": ["bold"] },
       "effects": {
-        "glitch": { "color": "#ff00ff", "density": 0.2, "pool": "blocks" },
-        "shake": { "amplitude": 1, "frequency": 6 },
-        "vignette": { "strength": 0.6, "color": "#000000" }
-      }
+        "glitch": {
+          "color": "#ff00ff",
+          "density": 0.22,
+          "interval": 55,
+          "pool": "blocks",
+        },
+        "shake": { "amplitude": 1, "frequency": 7 },
+        "vignette": { "color": "void", "strength": 0.65, "thickness": 1 },
+      },
     },
-    "dreamy": {
-      "style": { "fg": "ice", "attrs": ["italic"] },
-      "effects": {
-        "typewriter": { "speed": 55 },
-        "rainbow": { "speed": 18, "per_char": true },
-        "drift": { "dy": 1, "dx": 1, "period": 3500 },
-        "shadow": { "dx": 1, "dy": 1, "color": "#001018", "blend": 70 }
-      }
-    },
+
     "panic": {
-      "style": { "fg": "sun", "bg": "#330000" },
+      "style": { "fg": "sun", "bg": "#330000", "attrs": ["bold", "underline"] },
       "effects": {
-        "glitch": { "color": "rose", "density": 0.35, "interval": 40 },
-        "shake": { "amplitude": 2, "frequency": 14 },
-        "fade": { "duration": 700 },
-        "cursor_glow": { "color": "rose", "blend": 60 }
-      }
-    }
+        "glitch": {
+          "color": "rose",
+          "density": 0.4,
+          "interval": 35,
+          "pool": "junk",
+        },
+        "shake": { "amplitude": 2, "frequency": 15, "axes": "both" },
+        "fade": { "duration": 700, "to": 100 },
+        "cursor_glow": { "color": "rose", "blend": 60 },
+      },
+    },
+
+    "retro": {
+      "style": { "fg": "moss", "bg": "void", "attrs": ["bold"] },
+      "effects": {
+        "typewriter": { "speed": 24 },
+        "caret": { "blink": 320, "glyph": "█", "color": "moss" },
+        "flicker": { "color": "amber", "interval": 140 },
+      },
+    },
   },
 
   // ---------------------------------------------------------------------------
-  // murmurs：真正会闪出来的句子
-  //   text     必填
-  //   duration 毫秒（默认 3000）  weight 触发权重（默认 1）
-  //   effects  具名表；可带 delay/duration 做时间轴编排
-  //   trap     true 时会劫持你的键盘，直到你一字不差打出 unlock_text
-  //   when     可选：只在指定 filetype / 模式下出现
+  // murmurs
+  //   text      必填
+  //   preset    先套预设，再被本条 style / effects 覆盖
+  //   duration  显示毫秒数（默认 3000）   weight 触发权重（默认 1）
+  //   effects   具名表；delay/duration 做时间轴，priority 控制同通道覆盖顺序
+  //   trap      true 则劫持键盘，直到你打出 unlock_text
+  //   when      可选：只在指定 filetype / 模式下出现
   // ---------------------------------------------------------------------------
   "murmurs": [
+    // ===================== 文字通道 =====================
+
     {
-      "text": "你确定这里不需要判空吗？",
-      "preset": "horror",
-      "duration": 3200,
-      "weight": 3
-    },
-    {
-      "text": "上次这个 bug 也是从这儿冒出来的",
-      "style": { "fg": "sun" },
-      "effects": { "typewriter": { "speed": 45 } },
-      "duration": 3500
-    },
-    {
-      "text": "要不要先写个测试？",
-      "preset": "dreamy",
-      "duration": 4000
-    },
-    {
-      "text": "困了就睡，别硬撑",
+      // typewriter —— 逐字吐出
+      "text": "This is the last line of your fucking life.\n Have you ever thought about what you're doing? \n Continue, you'll regret it.",
       "style": { "fg": "moss" },
-      "effects": { "pulse": { "min": 0, "max": 60, "period": 1200 } },
-      "duration": 4000
+      "duration": 10100,
+      "weight": 2,
+      "effects": { "typewriter": { "speed": 70 } },
     },
     {
-      "text": "这就是你昨天说『马上就好』的地方",
+      // typewriter 不写 speed 时，会把整句均匀铺满 duration
+      "text": "What are you waiting for? \nYour brain? \n You ALREADY KNOW that the one who would wait for you is alredy GONE, FOREVER!",
+      "style": { "fg": "azure", "attrs": ["italic"] },
+      "duration": 6900,
+      "effects": { "typewriter": {} },
+    },
+    {
+      // glitch —— 乱码可自定义颜色、密度、刷新间隔、字符池
+      "text": "Are you sure that this is what you want???????? \nHAVE YOU EVER THINK ABOUT IT!!!!!!???????",
+      "style": { "fg": "blood" },
+      "duration": 5600,
+      "weight": 3,
+      "effects": {
+        "glitch": {
+          "color": "#ff00ff",
+          "density": 0.12,
+          "interval": 70,
+          "pool": "katakana",
+        },
+      },
+    },
+    {
+      // glitch 的 pool 也可以直接写数组
+      "text": "So this is the core of your problem. \nIT IS YOURSELF.\nLook at me, I'm your existence, Look at me, I'M YOU...",
+      "style": { "fg": "ember" },
+      "duration": 6500,
+      "effects": {
+        "glitch": {
+          "color": "sun",
+          "density": 0.2,
+          "pool": ["0", "1", "▓", "?"],
+        },
+      },
+    },
+    {
+      // decay —— 乱码由少到多，最后把整句吃掉
+      "text": "So there is your loved ones. haha",
+      "style": { "fg": "moss" },
+      "duration": 5200,
+      "effects": {
+        "decay": { "color": "moss", "pool": "blocks", "density": 1.0 },
+      },
+    },
+    {
+      // decay + 别的乱码池
+      "text": "They are all gone, and it is because of you.\n You murdered them... You should go to hell.",
+      "style": { "fg": "ice" },
+      "duration": 5600,
+      "effects": { "decay": { "color": "#ff5555", "pool": "runes" } },
+    },
+    {
+      // caret —— 打字机后面的闪烁光标（颜色/字形/频率都可调）
+      "text": "So there is no way out.\nWhat you gonna do?\nWhat you gonna do???",
       "style": { "fg": "grape" },
+      "duration": 5100,
       "effects": {
-        "glitch": { "color": "grape", "density": 0.1 },
-        "caret": { "blink": 350 }
+        "typewriter": { "speed": 55 },
+        "caret": { "blink": 350, "glyph": "▌", "color": "rose" },
       },
-      "duration": 3500
+    },
+
+    // ===================== 样式通道 =====================
+
+    {
+      // rainbow —— 整句色相循环
+      "text": "    Sertraline hydrochloride    ",
+      "duration": 3600,
+      "effects": { "rainbow": { "speed": 30 } },
     },
     {
-      "text": "深呼吸，你还能再来一轮",
-      "preset": "panic",
-      "duration": 3000,
-      "weight": 2
-    },
-    {
-      "text": "等等，我是不是忘了 commit",
-      "style": { "fg": "amber" },
+      // rainbow per_char —— 每个字不同色
+      "text": "Happy now?\nNice.\nDon't look back...",
+      "style": { "fg": "sun" },
+      "duration": 3200,
       "effects": {
-        "typewriter": { "speed": 30 },
-        // delay：先安静地打字，900ms 之后才开始乱码
-        "glitch": { "delay": 900, "color": "amber", "density": 0.15 }
+        "rainbow": {
+          "per_char": true,
+          "speed": 26,
+          "saturation": 0.9,
+          "lightness": 0.65,
+        },
       },
-      "duration": 3600
     },
     {
-      "text": "你在逃避真正该改的那一行",
-      "preset": "horror",
+      // flicker —— 前景色周期性跳到刺眼的颜色
+      "text": "You're not looking at me, are you?\nYou're not looking at me, are you???",
+      "style": { "fg": "ice" },
+      "duration": 4800,
+      "effects": { "flicker": { "color": "blood", "interval": 110 } },
+    },
+
+    // ===================== 窗口通道 =====================
+
+    {
+      // pulse —— 透明度呼吸
+      "text": "It's gone. further than whatever you can imagine. They are all gone. They are all gone...",
+      "style": { "fg": "moss" },
+      "duration": 5600,
+      "effects": { "pulse": { "min": 0, "max": 65, "period": 1400 } },
+    },
+    {
+      // shake —— 高频抖动，可限定轴向
+      "text": "GO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\nGO KILL YOURSELF!!!\n",
+      "style": { "fg": "blood" },
+      "duration": 9700,
+      "effects": {
+        "shake": { "amplitude": 2, "frequency": 12, "axes": "row" },
+      },
+    },
+    {
+      // drift —— 缓慢漂浮
+      "text": "Mind the gaps between the reality and illusion.",
+      "style": { "fg": "azure", "attrs": ["italic"] },
+      "duration": 6000,
+      "effects": { "drift": { "dx": 2, "dy": 1, "period": 5000 } },
+    },
+    {
+      // fade —— 末尾淡出
+      "text": "Never learning, Never comprehending, Never persisting. If only you would see...",
+      "style": { "fg": "ash" },
+      "duration": 5200,
+      "effects": { "fade": { "delay": 4200, "duration": 1000, "to": 100 } },
+    },
+    {
+      // fade —— 从全透明淡入再淡出
+      "text": "Gonna control???\nWell, don't forget there is always someone behind the curtain.",
+      "style": { "fg": "sun" },
+      "duration": 5200,
+      "effects": {
+        "fade": { "from": 100, "to": 0, "duration": 900, "priority": 50 },
+      },
+    },
+    {
+      // shadow —— 背后一层阴影窗
+      "text": "Looks some one don't want you to exist.\nAlright, then I'll go away anyway.",
+      "style": { "fg": "ice", "bg": "#0b1622" },
+      "duration": 4900,
+      "effects": {
+        "shadow": { "dx": 2, "dy": 1, "color": "#001018", "blend": 65 },
+      },
+    },
+
+    // ===================== 屏幕通道 =====================
+
+    {
+      // vignette —— 屏幕四周变暗，适合跟恐怖预设一起用
+      "text": "#Something is comming.",
       "style": { "fg": "blood", "bg": "ink" },
-      "duration": 4000,
-      "when": { "modes": ["normal"] }
+      "duration": 4200,
+      "weight": 1,
+      "effects": {
+        "vignette": { "color": "void", "strength": 0.7, "thickness": 2 },
+      },
     },
     {
-      "text": "我没事，我很好",
+      // cursor_glow —— 跟随光标的光晕
+      "text": "Are you good with this care?\nNo need to tell more lie la lie la lies...",
+      "style": { "fg": "rose" },
+      "duration": 4800,
+      "effects": { "cursor_glow": { "color": "rose", "blend": 55 } },
+    },
+    {
+      // cursor_harass —— 骚扰真实光标。还需要在 setup 里把
+      // screen.cursor_harass.enabled 打开，否则会被全局拦下
+      "text": "Sorry, I need to go.\nPitty crap.",
+      "style": { "fg": "amber" },
+      "duration": 3000,
+      "weight": 0.2,
+      "effects": {
+        "cursor_harass": {
+          "interval": 900,
+          "amplitude": 1,
+          "allow_insert": false,
+        },
+      },
+    },
+
+    // ===================== 组合技 =====================
+
+    {
+      // typewriter + glitch(delay) + caret + fade —— 先安静打字，随后开始崩坏
+      "text": "Missing? \nYou're missing the point.\nYou're missing the point.",
+      "style": { "fg": "amber" },
+      "duration": 4600,
+      "weight": 2,
+      "effects": {
+        "typewriter": { "speed": 28 },
+        "caret": { "blink": 300, "color": "sun" },
+        "glitch": {
+          "delay": 1400,
+          "color": "rose",
+          "density": 0.18,
+          "pool": "junk",
+        },
+        "fade": { "delay": 3600, "duration": 1000 },
+      },
+    },
+    {
+      // rainbow(per_char) + drift + shadow —— 又飘又花
+      "text": "What I Gonna Do??? What Gonna Do???What Gonna Do???What Gonna Do???\nEND YOUR FUCKING LIFE!!!\n END YOUR FUCKING LIFE!!!\nEND YOUR FUCKING LIFE!!!",
+      "duration": 8000,
+      "effects": {
+        "rainbow": { "per_char": true, "speed": 30 },
+        "drift": { "dx": 1, "dy": 1, "period": 3600, "priority": 5 },
+        "shadow": {
+          "dx": 1,
+          "dy": 1,
+          "color": "#101020",
+          "blend": 70,
+          "priority": 20,
+        },
+        "pulse": { "min": 0, "max": 40, "period": 1300, "priority": -5 },
+      },
+    },
+    {
+      // 预设恐怖 + 额外覆盖：vignette + shake + glitch 一起上
+      "preset": "horror",
+      "text": "Always escaping... \n\nDo you think it will works?\n\nTragically.",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 4600,
+      "weight": 2,
+      "effects": {
+        "glitch": { "density": 0.3, "pool": "blocks" },
+        "shake": { "amplitude": 1, "frequency": 9 },
+      },
+    },
+    {
+      // 多行文字 + 组合：浮窗会按内容自动变高
+      "text": "Nothing Matters\nNothing Matters\nNothing",
+      "style": { "fg": "ice", "bg": "#0a0f18" },
+      "duration": 5000,
+      "effects": {
+        "typewriter": { "speed": 40 },
+        "glitch": {
+          "delay": 1500,
+          "color": "azure",
+          "density": 0.1,
+          "pool": "math",
+        },
+      },
+    },
+
+    // ===================== 条件标签 =====================
+
+    {
+      // 只在 Lua 文件里出现
+      "text": "NILNILNILNILNIL\nNILNINILNILNILNILNILNIL\nNILNILNILNILNIL\nNILNILNILNILNIL",
+      "style": { "fg": "azure" },
+      "duration": 4800,
+      "when": { "filetypes": ["lua"] },
+      "effects": { "glitch": { "color": "azure", "pool": "math" } },
+    },
+    {
+      // 只在 normal 模式出现（insert 时不打扰你）
+      "text": "REALLY GONNA MOVE.",
+      "style": { "fg": "sun" },
+      "duration": 3200,
+      "when": { "modes": ["normal"] },
+    },
+    {
+      // 只在 Python 里、且只在 insert 模式
+      "text": "缩进又混了",
+      "style": { "fg": "moss" },
+      "duration": 3000,
+      "when": { "filetypes": ["python"], "modes": ["insert"] },
+      "effects": { "shake": { "amplitude": 1, "frequency": 8 } },
+    },
+
+    // ===================== 权重演示 =====================
+
+    {
+      // weight 小 = 很少出现（0.2 表示大约默认的五分之一机会）
+      "text": "Feeling good? \n Are you sure?",
+      "style": { "fg": "ash", "attrs": ["italic"] },
+      "duration": 3000,
+      "weight": 0.2,
+    },
+    {
+      // weight 大 = 经常出现
+      "text": "Nothing. It's gone.\n It's gone.\nIt's gone.",
+      "style": { "fg": "amber" },
+      "duration": 3500,
+      "weight": 6,
+      "effects": { "typewriter": { "speed": 35 } },
+    },
+
+    // ===================== 劫持（trap） =====================
+
+    {
+      // 最简单的劫持：unlock_text 默认取 text
+      "text": "Everyone that you loved... Do you ever have one?",
       "preset": "dreamy",
       "duration": 6000,
+      "weight": 1,
       "trap": true,
-      "weight": 1
     },
     {
-      "text": "请把我写完",
+      // 指定 unlock_text：屏幕显示这一句，但你必须打的是 unlock_text
+      "text": "cells. why don't you repeat! Cells.",
       "style": { "fg": "moss" },
-      "effects": { "decay": { "color": "moss", "pool": "blocks" } },
       "duration": 6000,
       "trap": true,
-      "unlock_text": "请把我写完"
+      "unlock_text": "repeat your baseline.",
+      "effects": {
+        "decay": { "delay": 500, "color": "moss", "pool": "blocks" },
+      },
     },
     {
-      "text": "还没到下班时间",
-      "preset": "panic",
+      // 恐怖预设的劫持：又暗又抖还要你打字
+      "preset": "horror",
+      "text": "A white fountain stands in the middle.",
       "duration": 5000,
+      "weight": 0.5,
       "trap": true,
-      "weight": 1
+    },
+
+    // ===================== 大窗 / 全屏（large 与 overlay） =====================
+
+    {
+      // large：占屏幕 60% 的大窗，文字居中留白，带影子
+      "text": "Having given out so much...\nDo you ever found one?\nTool guy... droppable tool.\nEnjoy the batray...",
+      "style": { "fg": "ice", "bg": "#0b1622", "attrs": ["bold"] },
+      "duration": 7500,
+      "display": {
+        "mode": "large",
+        "cover": 0.6,
+        "align": "center",
+        "padding": 4,
+        "border": "rounded",
+      },
+      "effects": {
+        "grow": { "duration": 280 },
+        "typewriter": { "speed": 60 },
+        "shadow": { "dx": 2, "dy": 1, "color": "#001018", "blend": 70 },
+      },
     },
     {
-      "text": "记得喝水",
-      "style": { "fg": "sun" },
-      "effects": { "rainbow": { "per_char": true, "speed": 30 } },
-      "duration": 3000
-    }
-  ]
+      // overlay：铺满整屏、背景完全不透明，背后代码彻底看不见
+      // 全屏默认会自动夺键，连按两次 <Esc> 才能提前挣脱
+      "text": "A dark nothingness start to spin.\nHave you ever be blocked into an institution\n when you didn't do your job?\nCells.",
+      "style": { "fg": "sun", "bg": "ink", "attrs": ["bold"] },
+      "duration": 7900,
+      "weight": 2,
+      "display": {
+        "mode": "overlay",
+        "cover": 1.0,
+        "padding": 6,
+        "border": "none",
+        "opaque": true,
+      },
+      "effects": {
+        "grow": { "duration": 200, "anchor": "center" },
+        "typewriter": { "speed": 55 },
+        "glitch": {
+          "delay": 1200,
+          "color": "rose",
+          "density": 0.2,
+          "pool": "blocks",
+        },
+        "fade": { "delay": 7200, "duration": 700 },
+        "shrink": { "delay": 7200, "duration": 700 },
+      },
+    },
+    {
+      // overlay + wipe：从顶部像窗帘一样展开
+      "text": "Interlinked.\nWhat is it like to hold the hands of one you love?\n - Interlinked\n Have you ever been in an institution\n - Interlinked.",
+      "style": { "fg": "moss", "bg": "void", "attrs": ["bold"] },
+      "duration": 7500,
+      "display": {
+        "mode": "overlay",
+        "cover": 1.0,
+        "padding": 8,
+        "border": "none",
+      },
+      "effects": {
+        "wipe": { "duration": 320, "anchor": "top" },
+        "typewriter": { "speed": 40 },
+      },
+    },
+    {
+      // 半透明全屏：背后代码还隐约可见，压抑但不完全黑
+      "text": "Why the Tragic end?\nWhy the broken soul?\nWhy the tragic end?\nNo one left to hold...",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 5300,
+      "display": {
+        "mode": "overlay",
+        "cover": 1.0,
+        "opaque": false,
+        "blend": 45,
+        "padding": 5,
+      },
+      "effects": {
+        "glitch": { "color": "rose", "pool": "junk" },
+        "shake": { "amplitude": 1, "frequency": 10 },
+      },
+    },
+
+    // ===================== 光标劫持 =====================
+
+    {
+      // cursor_grab：原地锁死光标（想动动不了），结束后原样还原
+      "text": "No matter what...\nPlain...\nAll end.",
+      "style": { "fg": "grape" },
+      "duration": 3200,
+      "weight": 0.6,
+      "effects": {
+        "cursor_grab": { "to": "keep", "insert": false },
+        "glitch": { "color": "grape" },
+      },
+    },
+    {
+      // cursor_grab(to=center) + 全屏 + 夺键：最痛的一种
+      "text": "Listen...\nYOU SHOULD NEVER COME BACK AGAIN...",
+      "style": { "fg": "sun", "bg": "#2a0010", "attrs": ["bold"] },
+      "duration": 4800,
+      "weight": 0.4,
+      "display": {
+        "mode": "overlay",
+        "cover": 1.0,
+        "padding": 6,
+        "border": "none",
+      },
+      "effects": {
+        "grow": { "duration": 220 },
+        "cursor_grab": { "to": "center", "insert": false },
+        "typewriter": { "speed": 70 },
+      },
+    },
+    {
+      // 加强版 cursor_harass：更大振幅 + 偶发大跳（记得在 config 里开 screen.cursor_harass）
+      "text": "Wow, Look at your arm.\nAfraid?",
+      "style": { "fg": "amber" },
+      "duration": 3000,
+      "weight": 0.3,
+      "effects": {
+        "cursor_harass": {
+          "interval": 500,
+          "amplitude": 2,
+          "jump": 6,
+          "jump_chance": 0.3,
+          "axes": "col",
+        },
+      },
+    },
+  ],
 }
