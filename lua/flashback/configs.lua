@@ -76,6 +76,7 @@
 
 ---@class FlashbackConfig
 ---@field autostart boolean
+---@field language "en"|"zh-CN"|"auto" UI language; "auto" reads $LANG
 ---@field murmurs_path string
 ---@field fps number frame rate cap for the composer
 ---@field timer FlashbackTimerConfig
@@ -106,6 +107,7 @@ local DEFAULT_MURMURS = plugin_root() .. "/data/murmurs.jsonc"
 ---@type FlashbackConfig
 M.defaults = {
     autostart = false,
+    language = "en",
     murmurs_path = DEFAULT_MURMURS,
     fps = 30,
 

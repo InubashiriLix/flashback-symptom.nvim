@@ -65,6 +65,7 @@ check(decoded["$schema"] ~= nil, "shipped material declares $schema")
 check(tostring(decoded["$schema"]):find("flashback%-symptom%.nvim") ~= nil, "$schema points at this repo")
 
 local murmur_props = schema.definitions.murmur.properties
+local style_props = schema.definitions.style.properties
 local unknown = {}
 for i, m in ipairs(decoded.murmurs or {}) do
     for k in pairs(m) do
@@ -80,7 +81,53 @@ for i, m in ipairs(decoded.murmurs or {}) do
 end
 check(#unknown == 0, "every shipped murmur key is documented (" .. table.concat(unknown, ", ") .. ")")
 
-local style_props = schema.definitions.style.properties
+-- The showcase example must exercise every built-in effect and stay schema-clean.
+print("showcase example")
+local showcase_body = read(root .. "/examples/showcase.jsonc")
+check(showcase_body ~= nil, "examples/showcase.jsonc exists")
+if showcase_body then
+    local sok, showcase = pcall(vim.json.decode, jsonc.strip(showcase_body))
+    check(sok, "showcase decodes: " .. tostring(showcase):sub(1, 80))
+    if sok then
+        local seen = {}
+        local bad = {}
+        for i, m in ipairs(showcase.murmurs or {}) do
+            for k in pairs(m) do
+                if murmur_props[k] == nil then
+                    bad[#bad + 1] = ("showcase #%d key '%s'"):format(i, k)
+                end
+            end
+            for ename in pairs(m.effects or {}) do
+                seen[ename] = true
+                if effect_props[ename] == nil then
+                    bad[#bad + 1] = ("showcase #%d effect '%s'"):format(i, ename)
+                end
+            end
+            for k in pairs(m.style or {}) do
+                if style_props[k] == nil then
+                    bad[#bad + 1] = ("showcase #%d style.%s"):format(i, k)
+                end
+            end
+        end
+        for name, preset in pairs(showcase.presets or {}) do
+            for k in pairs(preset.style or {}) do
+                if style_props[k] == nil then
+                    bad[#bad + 1] = ("showcase preset %s style.%s"):format(name, k)
+                end
+            end
+            for ename in pairs(preset.effects or {}) do
+                if effect_props[ename] == nil then
+                    bad[#bad + 1] = ("showcase preset %s effect '%s'"):format(name, ename)
+                end
+            end
+        end
+        check(#bad == 0, "showcase keys all documented (" .. table.concat(bad, ", ") .. ")")
+        for _, name in ipairs(registered) do
+            check(seen[name] == true, "showcase demonstrates effect: " .. name)
+        end
+    end
+end
+
 local bad_style = {}
 for i, m in ipairs(decoded.murmurs or {}) do
     for k in pairs(m.style or {}) do

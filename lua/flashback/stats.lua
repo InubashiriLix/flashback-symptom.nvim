@@ -2,6 +2,8 @@
 
 local uv = vim.uv or vim.loop
 
+local i18n = require("flashback.i18n")
+
 local M = {}
 
 M.enabled = true
@@ -21,22 +23,22 @@ local EMPTY = {
 }
 
 local ACHIEVEMENTS = {
-    { key = "first_flashback", desc = "第一次闪回", check = function(d)
+    { key = "first_flashback", label = "achievement_first_flashback", check = function(d)
         return d.emitted >= 1
     end },
-    { key = "ten_flashbacks", desc = "闪回十次", check = function(d)
+    { key = "ten_flashbacks", label = "achievement_ten_flashbacks", check = function(d)
         return d.emitted >= 10
     end },
-    { key = "hundred_flashbacks", desc = "百次闪回", check = function(d)
+    { key = "hundred_flashbacks", label = "achievement_hundred_flashbacks", check = function(d)
         return d.emitted >= 100
     end },
-    { key = "first_trap", desc = "第一次被劫持", check = function(d)
+    { key = "first_trap", label = "achievement_first_trap", check = function(d)
         return d.traps >= 1
     end },
-    { key = "escape_artist", desc = "成功逃脱劫持", check = function(d)
+    { key = "escape_artist", label = "achievement_escape_artist", check = function(d)
         return d.escapes >= 1
     end },
-    { key = "captive", desc = "累计被劫持一分钟", check = function(d)
+    { key = "captive", label = "achievement_captive", check = function(d)
         return d.trap_ms >= 60000
     end },
 }
@@ -117,7 +119,7 @@ function M._check_achievements()
         if not data.achievements[a.key] and a.check(data) then
             data.achievements[a.key] = os.time()
             vim.schedule(function()
-                vim.notify("flashback: 成就解锁 —— " .. a.desc, vim.log.levels.INFO)
+                vim.notify(i18n.t("achievement_unlocked", i18n.t(a.label)), vim.log.levels.INFO)
             end)
         end
     end
@@ -131,21 +133,24 @@ end
 ---@return string
 function M.summary()
     local d = M.get()
+    local function row(label_key, value)
+        return "  " .. i18n.t(label_key) .. " : " .. value
+    end
     local lines = {
-        "flashback 统计",
-        "  闪回次数   : " .. tostring(d.emitted or 0),
-        "  被劫持次数 : " .. tostring(d.traps or 0),
-        "  劫持总时长 : " .. string.format("%.1fs", (d.trap_ms or 0) / 1000),
-        "  成功逃脱   : " .. tostring(d.escapes or 0),
-        "  持久化文件 : " .. tostring(path),
+        i18n.t("stats_title"),
+        row("stats_emitted", tostring(d.emitted or 0)),
+        row("stats_traps", tostring(d.traps or 0)),
+        row("stats_trap_ms", string.format("%.1fs", (d.trap_ms or 0) / 1000)),
+        row("stats_escapes", tostring(d.escapes or 0)),
+        row("stats_path", tostring(path)),
     }
     local unlocked = {}
     for _, a in ipairs(ACHIEVEMENTS) do
         if d.achievements and d.achievements[a.key] then
-            unlocked[#unlocked + 1] = a.desc
+            unlocked[#unlocked + 1] = i18n.t(a.label)
         end
     end
-    lines[#lines + 1] = "  已解锁成就 : " .. (#unlocked > 0 and table.concat(unlocked, "、") or "（无）")
+    lines[#lines + 1] = row("stats_achievements", #unlocked > 0 and table.concat(unlocked, ", ") or i18n.t("stats_none"))
     return table.concat(lines, "\n")
 end
 
@@ -153,7 +158,7 @@ end
 function M.achievement_list()
     local out = {}
     for _, a in ipairs(ACHIEVEMENTS) do
-        out[#out + 1] = a.desc
+        out[#out + 1] = i18n.t(a.label)
     end
     return out
 end

@@ -1,5 +1,7 @@
 -- Audible / visual feedback when a murmur fires.
 
+local i18n = require("flashback.i18n")
+
 local M = {}
 
 ---@param cfg FlashbackConfig
@@ -26,7 +28,8 @@ function M.fire(cfg, murmur, kind)
             info = vim.log.levels.INFO,
             debug = vim.log.levels.DEBUG,
         }
-        local msg = kind == "trap" and "flashback: 你被劫持了" or ("flashback: " .. (murmur and murmur.text or ""))
+        local msg = kind == "trap" and i18n.t("trap_notify")
+            or i18n.t("feedback_murmur", murmur and murmur.text or "")
         vim.notify(msg, levels[f.notify_level or "info"] or vim.log.levels.INFO)
     end
 end

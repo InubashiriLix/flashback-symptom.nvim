@@ -1,0 +1,371 @@
+*flashback.txt*		模拟闪回之痛				*flashback*
+
+			FLASHBACK-SYMPTOM.NVIM
+			需要 Neovim 0.11 或更新版本
+
+flashback-symptom.nvim 会在你写代码时凭空弹出带颜色的「喃喃自语」（murmur）：
+它们会自己打字、乱码、闪烁、飘移，偶尔还会劫持你的键盘，直到你把提示的
+文字一字不差地重新打出来。
+
+本插件只为娱乐与模拟而生，不会提升你的脑容量，也不会提升你的工作效率。
+
+==============================================================================
+目录							*flashback-contents*
+
+1. 简介 ........................................... |flashback-intro|
+2. 安装 ........................................... |flashback-install|
+3. 配置 ........................................... |flashback-setup|
+4. 命令 ........................................... |flashback-commands|
+5. Lua API ........................................ |flashback-api|
+6. murmur 素材 .................................... |flashback-material|
+7. 样式与调色板 ................................... |flashback-style|
+8. 特效 ........................................... |flashback-effects|
+9. 自定义特效 ..................................... |flashback-custom-effects|
+10. 触发条件 ...................................... |flashback-triggers|
+11. 集成 .......................................... |flashback-integrations|
+12. 劫持 .......................................... |flashback-trap|
+13. 编辑器支持（jsonls） .......................... |flashback-lsp|
+14. 统计 .......................................... |flashback-stats|
+15. 多语言 ........................................ |flashback-i18n|
+16. 健康检查 ...................................... |flashback-health|
+17. 安全性 ........................................ |flashback-safety|
+18. 许可 .......................................... |flashback-license|
+
+==============================================================================
+1. 简介							*flashback-intro*
+
+一条 murmur 就是一段有生命周期的、带颜色的文字。一个中央合成器按统一
+时钟驱动所有特效，因此打字机文字、乱码、窗口抖动、阴影和屏幕覆盖层可以
+互相叠加，而不是互相打架。
+
+插件绘制的一切都在它自己创建的浮窗里。它绝不会移动、缩放或改写你自己的
+窗口，|FlashbackStop| 会彻底回收它创建的所有窗口、阴影、覆盖层、autocmd
+与输入钩子。
+
+==============================================================================
+2. 安装						*flashback-install*
+
+用 lazy.nvim： >lua
+
+  {
+    "InubashiriLix/flashback-symptom.nvim",
+    config = function()
+      require("flashback").setup({})
+    end,
+  }
+<
+Lua 模块名是 `flashback`。
+
+==============================================================================
+3. 配置						*flashback-setup*
+
+>lua
+  require("flashback").setup({
+    autostart = false,      -- 进 Neovim 就自动开始？
+    language = "en",        -- "en" | "zh-CN" | "auto"       |flashback-i18n|
+    murmurs_path = ...,     -- JSONC 素材文件                |flashback-material|
+    fps = 30,               -- 合成器帧率上限
+
+    timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
+
+    render = {
+      position = "random",  -- "random" | "corner" | "cursor"
+      corner = "botright",
+      cursor_offset = { row = 1, col = 0 },
+      max_windows = 4,      -- 0 = 不限
+      allow_overlap = true,
+      border = "rounded",
+      winblend = 15,
+    },
+
+    effects = {
+      enabled = { typewriter = true, glitch = true, ... },  -- 单个特效开关
+      default_effects = { typewriter = {}, flicker = {} },  -- murmur 没写 effects 时
+    },
+
+    trap = {
+      enabled = true,
+      strict = true,
+      escape = true,        -- 连按两次 <Esc> 紧急逃生
+      escape_key = "<Esc><Esc>",
+    },
+
+    trigger = {
+      enabled = { filetype = false, time = false, idle = false, mode = false, events = false },
+      filetypes = { include = {}, exclude = {} },
+      time = { ranges = { { from = "00:00", to = "06:00", weight = 2 } } },
+      idle = { min_ms = 30000 },
+      modes = { insert = true, normal = true, visual = false, replace = true },
+    },
+
+    screen = { cursor_harass = { enabled = false } },
+
+    integrations = {
+      diagnostics = { enabled = true, weight = 1, duration = 3500, severity = { ... } },
+      todo = { enabled = true, weight = 1, duration = 3500, patterns = { "TODO", "FIXME" } },
+    },
+
+    stats = { enabled = true, path = nil, achievements = true },
+    feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+    lsp = {                                                |flashback-lsp|
+      enabled = true,
+      inject_jsonls = true,
+      install_to_datadir = true,
+      schema_url = nil,
+      file_match = { "flashback.json", "*murmurs*.jsonc", ... },
+    },
+
+    cmds = { start = "FlashbackStart", trap = "FlashbackTrap", ... },
+  })
+<
+setup() 是可选的。调用它会重建命令、加载素材、初始化统计并注入 JSON schema。
+
+==============================================================================
+4. 命令						*flashback-commands*
+
+:FlashbackStart		开始闪回。
+:FlashbackStop		停止，并回收所有窗口与输入钩子。
+:FlashbackToggle	开关。
+:FlashbackOnce		立刻随机闪一次。
+:FlashbackTrap		立刻强制触发一次劫持。		|flashback-trap|
+:FlashbackStats		查看计数与成就。		|flashback-stats|
+:FlashbackSchema	显示 schema 路径、URL 与 jsonls 配置片段。
+			`:FlashbackSchema yank` 会把它复制到寄存器。
+			|flashback-lsp|
+
+==============================================================================
+5. LUA API						*flashback-api*
+
+>lua
+  local fb = require("flashback")
+  fb.setup(opts)
+  fb.start()          fb.stop()        fb.toggle()
+  fb.once()           fb.trap_now()
+  fb.reload_murmurs() -- 改完素材后热重载
+  fb.is_running()     fb.stats_summary()
+<
+其他模块：
+
+- `require("flashback.effects").register(name, def)`	|flashback-custom-effects|
+- `require("flashback.lsp")`				|flashback-lsp|
+- `require("flashback.i18n").t(key, ...)`		|flashback-i18n|
+
+==============================================================================
+6. MURMUR 素材						*flashback-material*
+
+素材是 JSONC：允许注释（`//`、`/* */`）和尾逗号，解析前会先被剥掉。
+
+>jsonc
+  {
+    "$schema": "https://.../schema/murmurs.schema.json",
+    "palette":     { "blood": "#ff5555" },
+    "glyph_pools": { "blocks": ["░", "▒", "▓"] },
+    "presets":     { "horror": { "style": {...}, "effects": {...} } },
+    "murmurs": [
+      {
+        "text": "你确定这里不需要判空吗？",
+        "preset": "horror",
+        "style":    { "fg": "blood", "bg": "#101010", "attrs": ["bold"] },
+        "duration": 3200,
+        "weight":   3,
+        "effects":  { "glitch": { "delay": 800, "color": "#ff00ff" } },
+        "trap":       true,
+        "unlock_text": "你确定这里不需要判空吗？",
+        "when":       { "filetypes": ["lua"], "modes": ["insert"] }
+      }
+    ]
+  }
+<
+
+字段：
+
+	`text`		必填，要喃喃自语的文字
+	`color`		`style.fg` 的旧写法
+	`style`		|flashback-style|
+	`preset`	`presets` 里的名字；先合并，再被本条覆盖
+	`duration`	显示多少毫秒（默认 3000）
+	`weight`	触发权重（默认 1）
+	`effects`	具名特效及其参数			|flashback-effects|
+	`trap`		出现时劫持键盘				|flashback-trap|
+	`unlock_text`	必须打出什么才能解脱（默认取 `text`）
+	`when`		本条 murmur 的触发标签		|flashback-triggers|
+
+旧的数组写法 `"effects": ["glitch", "flicker"]` 仍然兼容，会自动升级成具名表。
+
+==============================================================================
+7. 样式与调色板						*flashback-style*
+
+颜色可以写 `"#RRGGBB"`、`palette` 里的键名，或 `"random"`/`"theme"` 从调色板
+随机取一个。
+
+>lua
+  style = {
+    fg = "blood", bg = "#1a0000", sp = "ice",
+    attrs = { "bold", "italic", "underline", "undercurl",
+              "underdouble", "underdotted", "underdashed",
+              "strikethrough", "reverse", "nocombine" },
+    blend = 15,
+  }
+<
+`bg` 会铺满整个浮窗，而不只是文字背后。
+
+==============================================================================
+8. 特效							*flashback-effects*
+
+每个特效都可以带通用的时间轴字段：
+
+	`delay`		延迟多少毫秒才开始
+	`duration`	运行多少毫秒（默认：本条 murmur 剩余的全部时间）
+	`priority`	同一通道内的覆盖顺序，越大越后写
+
+文字通道（修改共享的文字模型）：
+
+	typewriter	逐字吐出
+			`speed` `min_speed` `max_speed`
+	glitch		随机字符变乱码随后还原
+			`color` `density` `interval` `pool`
+	decay		乱码不断增长直到整句被吃掉
+			`color` `pool` `density`
+	caret		跟在打字机后面的闪烁光标
+			`blink` `glyph` `color`
+
+样式通道：
+
+	rainbow		色相循环；`per_char` 让每个字不同色
+			`speed` `saturation` `lightness` `per_char`
+	flicker		前景色周期性跳到刺眼的颜色
+			`color` `interval`
+
+窗口通道：
+
+	pulse		透明度呼吸				`min` `max` `period`
+	shake		高频抖动				`amplitude` `frequency` `axes`
+	drift		缓慢漂浮				`dx` `dy` `period`
+	fade		淡出（或淡入）				`from` `to`
+	shadow		窗口背后的一层阴影窗			`dx` `dy` `color` `blend`
+
+屏幕通道（同一时刻只有一条 murmur 能占据屏幕）：
+
+	vignette	屏幕四周变暗				`color` `strength` `thickness`
+	cursor_glow	跟随光标的光晕				`color` `blend` `padding`
+	cursor_harass	骚扰真实光标				`interval` `amplitude` `allow_insert`
+
+`cursor_harass` 还需要在 setup 里设 `screen.cursor_harass.enabled = true`；
+因为它会碰你的光标，默认关闭。
+
+==============================================================================
+9. 自定义特效						*flashback-custom-effects*
+
+>lua
+  require("flashback.effects").register("my_fx", {
+    channel = "win",
+    priority = 0,
+    defaults = { amount = 2 },
+    enter = function(ctx) end,
+    tick  = function(frame, ctx, t)  -- t：本特效已运行的毫秒数
+      frame.row_offset = (frame.row_offset or 0) + math.sin(t / 100) * ctx.params.amount
+    end,
+    exit  = function(ctx) end,
+  })
+<
+特效只往 `frame` / `ctx.text` 里写。可用的通道：
+
+	frame.style.fg / bg / attrs	文字样式
+	frame.char_style(i, n) -> style	逐字样式
+	frame.blend			窗口透明度
+	frame.row_offset / col_offset	窗口位置（会被夹在屏幕内）
+	frame.shadow			{ enabled, dx, dy, color, blend }
+	frame.screen			{ vignette, cursor_glow, cursor_harass }
+
+	ctx.text			{ source, total, revealed, corrupt, caret }
+	ctx.params			合并后的默认值 + 素材参数
+	ctx.scratch			每个特效持久存在的暂存表
+
+==============================================================================
+10. 触发条件						*flashback-triggers*
+
+两层条件共同决定一条 murmur 是否会弹出。
+
+全局条件，默认全部关闭（所以默认就是纯随机）：
+
+	`trigger.enabled.filetype`	按 'filetype' 包含/排除
+	`trigger.enabled.mode`		按模式允许/禁止
+	`trigger.enabled.idle`		空闲 N 毫秒后才允许
+	`trigger.enabled.time`		只在配置的时间段内
+	`trigger.enabled.events`	也可以在保存 / 诊断变化时触发
+
+单条标签：
+
+	`when.filetypes`	只在指定 filetype
+	`when.modes`		只在指定模式
+
+==============================================================================
+11. 集成						*flashback-integrations*
+
+	diagnostics	当前的诊断信息会变成 murmur；严重级别决定配色
+	todo		`TODO` / `FIXME` / `XXX` / `HACK` 注释会变成 murmur
+
+两者都会在弹出时加入带权重的候选；用 `integrations.<name>.enabled = false`
+关闭。
+
+==============================================================================
+12. 劫持						*flashback-trap*
+
+带 `"trap": true` 的 murmur 会用 |vim.on_key| 接管键盘：所有按键被吞掉，
+直到你把 `unlock_text` 一字不差地打出来为止；打错一个字符就从头再来。
+
+注意：紧急逃生是连按两次 <Esc>，默认开启（`trap.escape`）。如果你关掉它又
+恰好碰上问题，你就真的被锁在 Neovim 里了。
+
+==============================================================================
+13. 编辑器支持（JSONLS）				*flashback-lsp*
+
+仓库自带 `schema/murmurs.schema.json`。两种用法：
+
+1. 自动注入（离线可用，默认开启）。setup() 时插件会读取你现有的 jsonls 配置，
+   追加一条 `json.schemas` 记录，把 `fileMatch` 模式映射到 schema。你原有的
+   schema 会被保留，插件也绝不会替你启用 jsonls。
+
+   用 `:FlashbackSchema` 打印本地路径、raw GitHub URL 和一段可直接粘贴的配置；
+   `:FlashbackSchema yank` 会把它复制到寄存器。
+
+2. 文件内 `$schema`。把 raw GitHub URL 写到素材文件顶部，补全就能跟着文件走。
+
+如果素材里写了注释，请命名为 `*.jsonc`，jsonls 才会放行注释。
+
+==============================================================================
+14. 统计						*flashback-stats*
+
+计数（闪回次数、被劫持次数、被劫持总时长、逃脱次数、按天分布）会持久化到
+`stdpath("data")/flashback/stats.json`，用 `:FlashbackStats` 查看。计数增长会
+解锁成就。
+
+==============================================================================
+15. 多语言						*flashback-i18n*
+
+`language` 可以是 `"en"`（默认）、`"zh-CN"`，或 `"auto"`（按 `$LANG` 推导）。
+它影响通知、劫持提示、统计标签、成就、错误信息与命令描述。
+
+本帮助文档提供英文与中文两版；把 'helplang' 设为 `cn`，`:help flashback`
+就会显示中文版。
+
+==============================================================================
+16. 健康检查						*flashback-health*
+
+`:checkhealth flashback` 会报告：Neovim 版本、素材是否可读且可解析、schema
+是否存在、是否检测到 jsonls、schema 是否已注入，以及统计目录是否可写。
+
+==============================================================================
+17. 安全性						*flashback-safety*
+
+插件只碰它自己创建的窗口、缓冲区、autocmd 和定时器。窗口位置一律夹在屏幕
+范围内。|FlashbackStop| 是幂等的，会移除一切；测试套件断言一次完整运行之后，
+你的窗口布局、光标位置、模式和自有窗口的选项都保持不变。
+
+==============================================================================
+18. 许可						*flashback-license*
+
+MIT。见仓库中的 LICENSE 文件。
+
+vim:tw=78:ts=8:noet:ft=help:norl:

@@ -1,5 +1,6 @@
 local murmur_item = require("flashback.murmurs")
 local jsonc = require("flashback.jsonc")
+local i18n = require("flashback.i18n")
 
 local M = {}
 
@@ -75,20 +76,20 @@ end
 ---@return table|nil material, string|nil err
 function M.load(path)
     if type(path) ~= "string" or path == "" then
-        return nil, "no murmurs_path configured"
+        return nil, i18n.t("err_no_path")
     end
 
     local content, err = read_file(path)
     if not content then
-        return nil, ("cannot read %s: %s"):format(path, tostring(err))
+        return nil, i18n.t("err_read_failed", path, tostring(err))
     end
 
     local ok, decoded = pcall(vim.json.decode, jsonc.strip(content))
     if not ok then
-        return nil, ("invalid JSON/JSONC in %s: %s"):format(path, tostring(decoded))
+        return nil, i18n.t("err_invalid_json", path, tostring(decoded))
     end
     if type(decoded) ~= "table" then
-        return nil, ("%s must contain a JSON object"):format(path)
+        return nil, i18n.t("err_not_object", path)
     end
 
     local palette = is_nil(decoded.palette) and {} or decoded.palette
@@ -97,13 +98,13 @@ function M.load(path)
     local raw = decoded.murmurs
 
     if type(raw) ~= "table" then
-        return nil, ("%s must contain a 'murmurs' array"):format(path)
+        return nil, i18n.t("err_missing_array", path)
     end
 
     local list = {}
     for i, item in ipairs(raw) do
         if type(item) ~= "table" or type(item.text) ~= "string" then
-            vim.notify(("flashback: skipping invalid murmur #%d"):format(i), vim.log.levels.WARN)
+            vim.notify(i18n.t("warn_skip_invalid", i), vim.log.levels.WARN)
         else
             local style = {}
             local eff = {}

@@ -1,0 +1,378 @@
+{
+  // ===========================================================================
+  //  flashback-symptom.nvim  —— 全面示例素材
+  //
+  //  这份文件示范了插件的每一项能力：调色板、乱码字符池、预设、权重、
+  //  劫持、条件标签、以及全部 14 个内置特效（含参数与时间轴编排）。
+  //
+  //  用法：把 murmurs_path 指向它，或者直接抄你需要的片段。
+  //  文件是 JSONC —— 允许注释和尾逗号。
+  // ===========================================================================
+
+  "$schema": "https://raw.githubusercontent.com/InubashiriLix/flashback-symptom.nvim/main/schema/murmurs.schema.json",
+
+  // ---------------------------------------------------------------------------
+  // palette：给颜色起名字。style 里可以写名字，也可以直接写 #RRGGBB
+  // ---------------------------------------------------------------------------
+  "palette": {
+    "blood": "#ff5555",
+    "ember": "#ff8800",
+    "amber": "#ffb86c",
+    "sun": "#f1fa8c",
+    "moss": "#50fa7b",
+    "ice": "#8be9fd",
+    "azure": "#61afef",
+    "grape": "#bd93f9",
+    "rose": "#ff79c6",
+    "ash": "#6272a4",
+    "ink": "#140b1a",
+    "void": "#000000"
+  },
+
+  // ---------------------------------------------------------------------------
+  // glyph_pools：乱码字符池，glitch / decay 的 pool 参数按名字引用
+  //   也可以不走名字池，直接在 pool 里写数组
+  // ---------------------------------------------------------------------------
+  "glyph_pools": {
+    "katakana": ["ﾊ", "ﾋ", "ﾌ", "ﾍ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ", "ﾔ", "ﾕ"],
+    "blocks": ["░", "▒", "▓", "█", "▚", "▞", "▛", "▜"],
+    "runes": ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ"],
+    "math": ["∀", "∃", "∅", "∈", "∑", "∏", "√", "∞", "≈", "≠"],
+    "junk": ["#", "%", "@", "&", "*", "?", "!", "^", "~"]
+  },
+
+  // ---------------------------------------------------------------------------
+  // presets：一组 style + effects 的打包。murmur 用 "preset" 引用，
+  //          然后可以用自己的 style / effects 覆盖其中任意一项
+  // ---------------------------------------------------------------------------
+  "presets": {
+    "calm": {
+      "style": { "fg": "ice", "attrs": ["italic"] },
+      "effects": { "typewriter": { "speed": 60 }, "pulse": { "min": 0, "max": 35, "period": 1600 } }
+    },
+
+    "dreamy": {
+      "style": { "fg": "grape" },
+      "effects": {
+        "typewriter": { "speed": 45 },
+        "rainbow": { "speed": 14, "per_char": true },
+        "drift": { "dx": 1, "dy": 1, "period": 4200 },
+        "shadow": { "dx": 1, "dy": 1, "color": "#12001e", "blend": 70 }
+      }
+    },
+
+    "horror": {
+      "style": { "fg": "blood", "bg": "ink", "attrs": ["bold"] },
+      "effects": {
+        "glitch": { "color": "#ff00ff", "density": 0.22, "interval": 55, "pool": "blocks" },
+        "shake": { "amplitude": 1, "frequency": 7 },
+        "vignette": { "color": "void", "strength": 0.65, "thickness": 1 }
+      }
+    },
+
+    "panic": {
+      "style": { "fg": "sun", "bg": "#330000", "attrs": ["bold", "underline"] },
+      "effects": {
+        "glitch": { "color": "rose", "density": 0.4, "interval": 35, "pool": "junk" },
+        "shake": { "amplitude": 2, "frequency": 15, "axes": "both" },
+        "fade": { "duration": 700, "to": 100 },
+        "cursor_glow": { "color": "rose", "blend": 60 }
+      }
+    },
+
+    "retro": {
+      "style": { "fg": "moss", "bg": "void", "attrs": ["bold"] },
+      "effects": {
+        "typewriter": { "speed": 24 },
+        "caret": { "blink": 320, "glyph": "█", "color": "moss" },
+        "flicker": { "color": "amber", "interval": 140 }
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // murmurs
+  //   text      必填
+  //   preset    先套预设，再被本条 style / effects 覆盖
+  //   duration  显示毫秒数（默认 3000）   weight 触发权重（默认 1）
+  //   effects   具名表；delay/duration 做时间轴，priority 控制同通道覆盖顺序
+  //   trap      true 则劫持键盘，直到你打出 unlock_text
+  //   when      可选：只在指定 filetype / 模式下出现
+  // ---------------------------------------------------------------------------
+  "murmurs": [
+    // ===================== 文字通道 =====================
+
+    {
+      // typewriter —— 逐字吐出
+      "text": "要不要先写个测试？",
+      "style": { "fg": "moss" },
+      "duration": 3600,
+      "weight": 2,
+      "effects": { "typewriter": { "speed": 70 } }
+    },
+    {
+      // typewriter 不写 speed 时，会把整句均匀铺满 duration
+      "text": "慢慢来，别急着下结论。",
+      "style": { "fg": "azure", "attrs": ["italic"] },
+      "duration": 4200,
+      "effects": { "typewriter": {} }
+    },
+    {
+      // glitch —— 乱码可自定义颜色、密度、刷新间隔、字符池
+      "text": "你确定这里不需要判空吗？",
+      "style": { "fg": "blood" },
+      "duration": 3400,
+      "weight": 3,
+      "effects": {
+        "glitch": { "color": "#ff00ff", "density": 0.12, "interval": 70, "pool": "katakana" }
+      }
+    },
+    {
+      // glitch 的 pool 也可以直接写数组
+      "text": "序列号对不上。",
+      "style": { "fg": "ember" },
+      "duration": 3000,
+      "effects": { "glitch": { "color": "sun", "density": 0.2, "pool": ["0", "1", "▓", "?"] } }
+    },
+    {
+      // decay —— 乱码由少到多，最后把整句吃掉
+      "text": "这段代码已经没救了",
+      "style": { "fg": "moss" },
+      "duration": 5200,
+      "effects": { "decay": { "color": "moss", "pool": "blocks", "density": 1.0 } }
+    },
+    {
+      // decay + 别的乱码池
+      "text": "内存正在泄漏",
+      "style": { "fg": "ice" },
+      "duration": 4200,
+      "effects": { "decay": { "color": "#ff5555", "pool": "runes" } }
+    },
+    {
+      // caret —— 打字机后面的闪烁光标（颜色/字形/频率都可调）
+      "text": "光标还在这里等着你",
+      "style": { "fg": "grape" },
+      "duration": 4000,
+      "effects": {
+        "typewriter": { "speed": 55 },
+        "caret": { "blink": 350, "glyph": "▌", "color": "rose" }
+      }
+    },
+
+    // ===================== 样式通道 =====================
+
+    {
+      // rainbow —— 整句色相循环
+      "text": "今天的颜色有点多",
+      "duration": 3600,
+      "effects": { "rainbow": { "speed": 30 } }
+    },
+    {
+      // rainbow per_char —— 每个字不同色
+      "text": "记得喝水",
+      "style": { "fg": "sun" },
+      "duration": 3200,
+      "effects": { "rainbow": { "per_char": true, "speed": 26, "saturation": 0.9, "lightness": 0.65 } }
+    },
+    {
+      // flicker —— 前景色周期性跳到刺眼的颜色
+      "text": "别盯着我看",
+      "style": { "fg": "ice" },
+      "duration": 3000,
+      "effects": { "flicker": { "color": "blood", "interval": 110 } }
+    },
+
+    // ===================== 窗口通道 =====================
+
+    {
+      // pulse —— 透明度呼吸
+      "text": "深呼吸……",
+      "style": { "fg": "moss" },
+      "duration": 4800,
+      "effects": { "pulse": { "min": 0, "max": 65, "period": 1400 } }
+    },
+    {
+      // shake —— 高频抖动，可限定轴向
+      "text": "手在抖",
+      "style": { "fg": "blood" },
+      "duration": 2600,
+      "effects": { "shake": { "amplitude": 2, "frequency": 12, "axes": "row" } }
+    },
+    {
+      // drift —— 缓慢漂浮
+      "text": "注意力飘走了",
+      "style": { "fg": "azure", "attrs": ["italic"] },
+      "duration": 6000,
+      "effects": { "drift": { "dx": 2, "dy": 1, "period": 5000 } }
+    },
+    {
+      // fade —— 末尾淡出
+      "text": "我要走了",
+      "style": { "fg": "ash" },
+      "duration": 4000,
+      "effects": { "fade": { "delay": 3000, "duration": 1000, "to": 100 } }
+    },
+    {
+      // fade —— 从全透明淡入再淡出
+      "text": "我又来了",
+      "style": { "fg": "sun" },
+      "duration": 4000,
+      "effects": { "fade": { "from": 100, "to": 0, "duration": 900, "priority": 50 } }
+    },
+    {
+      // shadow —— 背后一层阴影窗
+      "text": "光有影子",
+      "style": { "fg": "ice", "bg": "#0b1622" },
+      "duration": 3600,
+      "effects": { "shadow": { "dx": 2, "dy": 1, "color": "#001018", "blend": 65 } }
+    },
+
+    // ===================== 屏幕通道 =====================
+
+    {
+      // vignette —— 屏幕四周变暗，适合跟恐怖预设一起用
+      "text": "边缘在变暗",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 4200,
+      "weight": 1,
+      "effects": { "vignette": { "color": "void", "strength": 0.7, "thickness": 2 } }
+    },
+    {
+      // cursor_glow —— 跟随光标的光晕
+      "text": "看着你的光标",
+      "style": { "fg": "rose" },
+      "duration": 3400,
+      "effects": { "cursor_glow": { "color": "rose", "blend": 55 } }
+    },
+    {
+      // cursor_harass —— 骚扰真实光标。还需要在 setup 里把
+      // screen.cursor_harass.enabled 打开，否则会被全局拦下
+      "text": "别动，让我来",
+      "style": { "fg": "amber" },
+      "duration": 3000,
+      "weight": 0.2,
+      "effects": { "cursor_harass": { "interval": 900, "amplitude": 1, "allow_insert": false } }
+    },
+
+    // ===================== 组合技 =====================
+
+    {
+      // typewriter + glitch(delay) + caret + fade —— 先安静打字，随后开始崩坏
+      "text": "等等，我是不是忘了 commit",
+      "style": { "fg": "amber" },
+      "duration": 4600,
+      "weight": 2,
+      "effects": {
+        "typewriter": { "speed": 28 },
+        "caret": { "blink": 300, "color": "sun" },
+        "glitch": { "delay": 1400, "color": "rose", "density": 0.18, "pool": "junk" },
+        "fade": { "delay": 3600, "duration": 1000 }
+      }
+    },
+    {
+      // rainbow(per_char) + drift + shadow —— 又飘又花
+      "text": "已经分不清哪一行是哪一行了",
+      "duration": 5200,
+      "effects": {
+        "rainbow": { "per_char": true, "speed": 30 },
+        "drift": { "dx": 1, "dy": 1, "period": 3600, "priority": 5 },
+        "shadow": { "dx": 1, "dy": 1, "color": "#101020", "blend": 70, "priority": 20 },
+        "pulse": { "min": 0, "max": 40, "period": 1300, "priority": -5 }
+      }
+    },
+    {
+      // 预设恐怖 + 额外覆盖：vignette + shake + glitch 一起上
+      "preset": "horror",
+      "text": "你在逃避真正该改的那一行",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 4600,
+      "weight": 2,
+      "effects": {
+        "glitch": { "density": 0.3, "pool": "blocks" },
+        "shake": { "amplitude": 1, "frequency": 9 }
+      }
+    },
+    {
+      // 多行文字 + 组合：浮窗会按内容自动变高
+      "text": "第一行：你在看什么\n第二行：没什么\n第三行：真的没什么",
+      "style": { "fg": "ice", "bg": "#0a0f18" },
+      "duration": 5000,
+      "effects": {
+        "typewriter": { "speed": 40 },
+        "glitch": { "delay": 1500, "color": "azure", "density": 0.1, "pool": "math" }
+      }
+    },
+
+    // ===================== 条件标签 =====================
+
+    {
+      // 只在 Lua 文件里出现
+      "text": "这个 table 可能为 nil",
+      "style": { "fg": "azure" },
+      "duration": 3600,
+      "when": { "filetypes": ["lua"] },
+      "effects": { "glitch": { "color": "azure", "pool": "math" } }
+    },
+    {
+      // 只在 normal 模式出现（insert 时不打扰你）
+      "text": "按 j 按得太久了",
+      "style": { "fg": "sun" },
+      "duration": 3200,
+      "when": { "modes": ["normal"] }
+    },
+    {
+      // 只在 Python 里、且只在 insert 模式
+      "text": "缩进又混了",
+      "style": { "fg": "moss" },
+      "duration": 3000,
+      "when": { "filetypes": ["python"], "modes": ["insert"] },
+      "effects": { "shake": { "amplitude": 1, "frequency": 8 } }
+    },
+
+    // ===================== 权重演示 =====================
+
+    {
+      // weight 小 = 很少出现（0.2 表示大约默认的五分之一机会）
+      "text": "……偶尔想想就好",
+      "style": { "fg": "ash", "attrs": ["italic"] },
+      "duration": 3000,
+      "weight": 0.2
+    },
+    {
+      // weight 大 = 经常出现
+      "text": "保存了吗？保存了吗？保存了吗？",
+      "style": { "fg": "amber" },
+      "duration": 3200,
+      "weight": 6,
+      "effects": { "typewriter": { "speed": 35 } }
+    },
+
+    // ===================== 劫持（trap） =====================
+
+    {
+      // 最简单的劫持：unlock_text 默认取 text
+      "text": "我没事，我很好",
+      "preset": "dreamy",
+      "duration": 6000,
+      "weight": 1,
+      "trap": true
+    },
+    {
+      // 指定 unlock_text：屏幕显示这一句，但你必须打的是 unlock_text
+      "text": "请把我写完",
+      "style": { "fg": "moss" },
+      "duration": 6000,
+      "trap": true,
+      "unlock_text": "请把我写完",
+      "effects": { "decay": { "delay": 500, "color": "moss", "pool": "blocks" } }
+    },
+    {
+      // 恐怖预设的劫持：又暗又抖还要你打字
+      "preset": "horror",
+      "text": "还没到下班时间",
+      "duration": 5000,
+      "weight": 0.5,
+      "trap": true
+    }
+  ]
+}

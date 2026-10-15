@@ -1,0 +1,385 @@
+*flashback.txt*		Simulate the pain of flashback			*flashback*
+
+			FLASHBACK-SYMPTOM.NVIM
+			For Neovim version 0.11 or later
+
+flashback-symptom.nvim makes coloured "murmurs" pop up out of nowhere while you
+edit. They type themselves out, glitch, flicker, drift, and occasionally hijack
+your keyboard until you retype the prompt character for character.
+
+This plugin is for fun and simulation only. It will not increase your mental
+capacity or your working efficiency.
+
+==============================================================================
+CONTENTS						*flashback-contents*
+
+1. Introduction ................................... |flashback-intro|
+2. Install ........................................ |flashback-install|
+3. Setup .......................................... |flashback-setup|
+4. Commands ....................................... |flashback-commands|
+5. Lua API ........................................ |flashback-api|
+6. Murmur material ................................ |flashback-material|
+7. Style and palette .............................. |flashback-style|
+8. Effects ........................................ |flashback-effects|
+9. Custom effects ................................. |flashback-custom-effects|
+10. Triggers ...................................... |flashback-triggers|
+11. Integrations .................................. |flashback-integrations|
+12. The trap ...................................... |flashback-trap|
+13. Editor support (jsonls) ....................... |flashback-lsp|
+14. Statistics .................................... |flashback-stats|
+15. Language ...................................... |flashback-i18n|
+16. Health ........................................ |flashback-health|
+17. Safety ........................................ |flashback-safety|
+18. License ....................................... |flashback-license|
+
+==============================================================================
+1. INTRODUCTION						*flashback-intro*
+
+A murmur is a short, coloured line of text with a lifetime. A frame composer
+drives every effect on one clock, so typewriter text, glitch noise, window
+shake, shadows and screen overlays all compose instead of fighting each other.
+
+Everything the plugin draws lives in float windows it owns. It never moves,
+resizes or edits your own windows, and |FlashbackStop| tears down every window,
+shadow, overlay, autocommand and input hook it created.
+
+==============================================================================
+2. INSTALL						*flashback-install*
+
+With lazy.nvim: >lua
+
+  {
+    "InubashiriLix/flashback-symptom.nvim",
+    config = function()
+      require("flashback").setup({})
+    end,
+  }
+<
+The Lua module is `flashback`.
+
+==============================================================================
+3. SETUP						*flashback-setup*
+
+>lua
+  require("flashback").setup({
+    autostart = false,      -- start murmuring on VimEnter?
+    language = "en",        -- "en" | "zh-CN" | "auto"       |flashback-i18n|
+    murmurs_path = ...,     -- JSONC material file           |flashback-material|
+    fps = 30,               -- composer frame rate cap
+
+    timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
+
+    render = {
+      position = "random",  -- "random" | "corner" | "cursor"
+      corner = "botright",
+      cursor_offset = { row = 1, col = 0 },
+      max_windows = 4,      -- 0 = unlimited
+      allow_overlap = true,
+      border = "rounded",
+      winblend = 15,
+    },
+
+    effects = {
+      enabled = { typewriter = true, glitch = true, ... },  -- per-effect switch
+      default_effects = { typewriter = {}, flicker = {} },  -- when a murmur has none
+    },
+
+    trap = {
+      enabled = true,
+      strict = true,
+      escape = true,        -- double <Esc> emergency escape
+      escape_key = "<Esc><Esc>",
+    },
+
+    trigger = {
+      enabled = { filetype = false, time = false, idle = false, mode = false, events = false },
+      filetypes = { include = {}, exclude = {} },
+      time = { ranges = { { from = "00:00", to = "06:00", weight = 2 } } },
+      idle = { min_ms = 30000 },
+      modes = { insert = true, normal = true, visual = false, replace = true },
+    },
+
+    screen = { cursor_harass = { enabled = false } },
+
+    integrations = {
+      diagnostics = { enabled = true, weight = 1, duration = 3500, severity = { ... } },
+      todo = { enabled = true, weight = 1, duration = 3500, patterns = { "TODO", "FIXME" } },
+    },
+
+    stats = { enabled = true, path = nil, achievements = true },
+    feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+    lsp = {                                                |flashback-lsp|
+      enabled = true,
+      inject_jsonls = true,
+      install_to_datadir = true,
+      schema_url = nil,
+      file_match = { "flashback.json", "*murmurs*.jsonc", ... },
+    },
+
+    cmds = { start = "FlashbackStart", trap = "FlashbackTrap", ... },
+  })
+<
+setup() is optional. Calling it rebuilds the commands, loads the material,
+initialises statistics and injects the JSON schema.
+
+==============================================================================
+4. COMMANDS						*flashback-commands*
+
+:FlashbackStart		Start the murmurs.
+:FlashbackStop		Stop and tear down every window and input hook.
+:FlashbackToggle	Toggle.
+:FlashbackOnce		Show one random murmur right now.
+:FlashbackTrap		Force a trap right now.			|flashback-trap|
+:FlashbackStats		Show counters and achievements.		|flashback-stats|
+:FlashbackSchema	Show the schema path, URL and a jsonls
+			snippet. `:FlashbackSchema yank` copies it.
+			|flashback-lsp|
+
+==============================================================================
+5. LUA API						*flashback-api*
+
+>lua
+  local fb = require("flashback")
+  fb.setup(opts)
+  fb.start()          fb.stop()        fb.toggle()
+  fb.once()           fb.trap_now()
+  fb.reload_murmurs() -- after editing the material
+  fb.is_running()     fb.stats_summary()
+<
+Other modules:
+
+- `require("flashback.effects").register(name, def)`	|flashback-custom-effects|
+- `require("flashback.lsp")`				|flashback-lsp|
+- `require("flashback.i18n").t(key, ...)`		|flashback-i18n|
+
+==============================================================================
+6. MURMUR MATERIAL					*flashback-material*
+
+Material is JSONC: comments (`//`, `/* */`) and trailing commas are allowed.
+The decoder strips them before parsing.
+
+>jsonc
+  {
+    "$schema": "https://.../schema/murmurs.schema.json",
+    "palette":     { "blood": "#ff5555" },
+    "glyph_pools": { "blocks": ["░", "▒", "▓"] },
+    "presets":     { "horror": { "style": {...}, "effects": {...} } },
+    "murmurs": [
+      {
+        "text": "Do you really not need a nil check here?",
+        "preset": "horror",
+        "style":    { "fg": "blood", "bg": "#101010", "attrs": ["bold"] },
+        "duration": 3200,
+        "weight":   3,
+        "effects":  { "glitch": { "delay": 800, "color": "#ff00ff" } },
+        "trap":       true,
+        "unlock_text": "Do you really not need a nil check here?",
+        "when":       { "filetypes": ["lua"], "modes": ["insert"] }
+      }
+    ]
+  }
+<
+
+Fields:
+
+	`text`		required, the line to murmur
+	`color`		legacy shortcut for `style.fg`
+	`style`		|flashback-style|
+	`preset`	name in `presets`; merged, then overridden by this entry
+	`duration`	visible for N milliseconds (default 3000)
+	`weight`	relative trigger weight (default 1)
+	`effects`	named effects with their parameters	|flashback-effects|
+	`trap`		hijack the keyboard when it appears	|flashback-trap|
+	`unlock_text`	what must be typed to escape (default `text`)
+	`when`		per-murmur trigger tags		|flashback-triggers|
+
+The legacy array form `"effects": ["glitch", "flicker"]` is still accepted and
+upgraded to the named form.
+
+==============================================================================
+7. STYLE AND PALETTE					*flashback-style*
+
+Colours may be `"#RRGGBB"`, a key in `palette`, or `"random"`/`"theme"` to pick
+a random palette entry.
+
+>lua
+  style = {
+    fg = "blood", bg = "#1a0000", sp = "ice",
+    attrs = { "bold", "italic", "underline", "undercurl",
+              "underdouble", "underdotted", "underdashed",
+              "strikethrough", "reverse", "nocombine" },
+    blend = 15,
+  }
+<
+`bg` is painted across the whole float window, not just behind the glyphs.
+
+==============================================================================
+8. EFFECTS						*flashback-effects*
+
+Every effect may carry the common timing fields:
+
+	`delay`		milliseconds before this effect starts
+	`duration`	milliseconds it runs (default: the rest of the murmur)
+	`priority`	write order within a channel; higher wins
+
+Text channel (mutate the shared text model):
+
+	typewriter	reveals the murmur character by character
+			`speed` `min_speed` `max_speed`
+	glitch		replaces random glyphs with noise, then restores them
+			`color` `density` `interval` `pool`
+	decay		corruption grows until the line is eaten
+			`color` `pool` `density`
+	caret		blinking caret trailing the typewriter
+			`blink` `glyph` `color`
+
+Style channel:
+
+	rainbow		hue cycling; `per_char` colours every glyph
+			`speed` `saturation` `lightness` `per_char`
+	flicker		jumps the foreground to a jarring colour
+			`color` `interval`
+
+Window channel:
+
+	pulse		breathing transparency			`min` `max` `period`
+	shake		high frequency jitter			`amplitude` `frequency` `axes`
+	drift		slow floaty drift			`dx` `dy` `period`
+	fade		fades out (or in)			`from` `to`
+	shadow		a darker copy behind the window		`dx` `dy` `color` `blend`
+
+Screen channel (one murmur may own the screen at a time):
+
+	vignette	darkens the screen edges		`color` `strength` `thickness`
+	cursor_glow	a halo that follows the cursor		`color` `blend` `padding`
+	cursor_harass	nudges the real cursor			`interval` `amplitude` `allow_insert`
+
+`cursor_harass` also needs `screen.cursor_harass.enabled = true` in setup; it is
+off by default because it touches your cursor.
+
+==============================================================================
+9. CUSTOM EFFECTS					*flashback-custom-effects*
+
+>lua
+  require("flashback.effects").register("my_fx", {
+    channel = "win",
+    priority = 0,
+    defaults = { amount = 2 },
+    enter = function(ctx) end,
+    tick  = function(frame, ctx, t)  -- t: ms since this effect started
+      frame.row_offset = (frame.row_offset or 0) + math.sin(t / 100) * ctx.params.amount
+    end,
+    exit  = function(ctx) end,
+  })
+<
+Effects write into `frame` / `ctx.text` only. Two channels are available:
+
+	frame.style.fg / bg / attrs	text styling
+	frame.char_style(i, n) -> style	per-character styling
+	frame.blend			window transparency
+	frame.row_offset / col_offset	window position (clamped on screen)
+	frame.shadow			{ enabled, dx, dy, color, blend }
+	frame.screen			{ vignette, cursor_glow, cursor_harass }
+
+	ctx.text			{ source, total, revealed, corrupt, caret }
+	ctx.params			merged defaults + material parameters
+	ctx.scratch			persistent per-effect scratch table
+
+==============================================================================
+10. TRIGGERS						*flashback-triggers*
+
+Two layers decide when a murmur may appear.
+
+Global conditions, all off by default (so the default is pure random):
+
+	`trigger.enabled.filetype`	include/exclude by 'filetype'
+	`trigger.enabled.mode`		allow/deny by mode
+	`trigger.enabled.idle`		only after N ms without activity
+	`trigger.enabled.time`		only inside configured time ranges
+	`trigger.enabled.events`	may also fire on save / diagnostics
+
+Per-murmur tags:
+
+	`when.filetypes`	only in these filetypes
+	`when.modes`		only in these modes
+
+==============================================================================
+11. INTEGRATIONS					*flashback-integrations*
+
+	diagnostics	current diagnostic messages become murmurs;
+			severity selects the colour
+	todo		`TODO` / `FIXME` / `XXX` / `HACK` comments become
+			murmurs
+
+Both add weighted candidates at emit time; they are disabled with
+`integrations.<name>.enabled = false`.
+
+==============================================================================
+12. THE TRAP						*flashback-trap*
+
+A murmur with `"trap": true` takes over the keyboard with |vim.on_key|. Every
+keystroke is swallowed until you type `unlock_text` character for character; a
+wrong character resets the progress.
+
+CAUTION: the emergency escape is a double <Esc>. It is on by default
+(`trap.escape`). If you disable it and something goes wrong, you can be locked
+inside Neovim for real.
+
+==============================================================================
+13. EDITOR SUPPORT (JSONLS)				*flashback-lsp*
+
+The repository ships `schema/murmurs.schema.json`. Two ways to use it:
+
+1. Injection (offline, on by default). On setup() the plugin reads your
+   existing jsonls configuration and appends a `json.schemas` entry that maps
+   `fileMatch` patterns to the schema. Your own schemas are preserved and
+   jsonls is never enabled for you.
+
+   Use `:FlashbackSchema` to print the local path, the raw GitHub URL and a
+   ready-to-paste config block; `:FlashbackSchema yank` copies it.
+
+2. In-file `$schema`. Add the raw GitHub URL to the top of your material file
+   so completion travels with the file.
+
+Name your material `*.jsonc` if it contains comments so jsonls accepts them.
+
+==============================================================================
+14. STATISTICS						*flashback-stats*
+
+Counters (murmurs shown, traps, time held captive, escapes, per-day counts) are
+persisted to `stdpath("data")/flashback/stats.json` and read back with
+`:FlashbackStats`. Achievements unlock as counters grow.
+
+==============================================================================
+15. LANGUAGE						*flashback-i18n*
+
+`language` is `"en"` (default), `"zh-CN"`, or `"auto"` to derive it from `$LANG`.
+It affects notifications, the trap prompt, statistics labels, achievements,
+error messages and command descriptions.
+
+This help file ships in English and Chinese; set 'helplang' to `cn` to read the
+Chinese version with `:help flashback`.
+
+==============================================================================
+16. HEALTH						*flashback-health*
+
+`:checkhealth flashback` reports the Neovim version, whether the material is
+readable and parses, whether the schema is present, whether jsonls was found and
+whether the schema was injected, and whether the stats directory is writable.
+
+==============================================================================
+17. SAFETY						*flashback-safety*
+
+The plugin only ever touches windows, buffers, autocommands and timers that it
+created itself. Window positions are clamped to the screen. |FlashbackStop| is
+idempotent and removes everything; the test suite asserts that window layout,
+cursor position, mode and the options of your own windows are unchanged after a
+full run.
+
+==============================================================================
+18. LICENSE						*flashback-license*
+
+MIT. See the LICENSE file in the repository.
+
+vim:tw=78:ts=8:noet:ft=help:norl:

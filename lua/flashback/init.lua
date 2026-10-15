@@ -16,6 +16,7 @@ local text_model = require("flashback.text_model")
 local diagnostics = require("flashback.integrations.diagnostics")
 local todo = require("flashback.integrations.todo")
 local lsp = require("flashback.lsp")
+local i18n = require("flashback.i18n")
 
 local M = {}
 
@@ -177,7 +178,7 @@ function M.trap_now()
     local c = cfg()
     local murmur = murmurs.random_trap() or murmurs.random()
     if not murmur then
-        vim.notify("flashback: no murmurs loaded", vim.log.levels.WARN)
+        vim.notify(i18n.t("err_no_material"), vim.log.levels.WARN)
         return nil
     end
     return M.emit({ murmur = murmur })
@@ -267,38 +268,37 @@ function M.create_commands(names)
     created_cmds = {}
 
     local defs = {
-        { names.start, M.start, "Start the flashback murmurs" },
-        { names.stop, M.stop, "Stop the flashback murmurs" },
-        { names.toggle, M.toggle, "Toggle the flashback murmurs" },
+        { names.start, M.start, i18n.t("cmd_start") },
+        { names.stop, M.stop, i18n.t("cmd_stop") },
+        { names.toggle, M.toggle, i18n.t("cmd_toggle") },
         { names.once, function()
             M.once()
-        end, "Show a single random murmur" },
+        end, i18n.t("cmd_once") },
         { names.trap, function()
             M.trap_now()
-        end, "Force a flashback trap" },
+        end, i18n.t("cmd_trap") },
         { names.stats, function()
             vim.notify(M.stats_summary(), vim.log.levels.INFO)
-        end, "Show flashback statistics" },
+        end, i18n.t("cmd_stats") },
         { names.schema, function(arg)
             local info = lsp.info()
             local text = table.concat({
-                "flashback murmur schema",
-                "  本地文件 : " .. info.local_path,
-                "  远程地址 : " .. (info.url or "(未探测到 GitHub remote，可在 setup 里设 lsp.schema_url)"),
+                i18n.t("schema_title"),
+                "  " .. i18n.t("schema_local") .. " : " .. info.local_path,
+                "  " .. i18n.t("schema_remote") .. " : " .. (info.url or i18n.t("schema_remote_unknown")),
                 "",
-                "把下面这段放进你的 LSP 配置即可获得补全与校验：",
+                i18n.t("schema_paste"),
                 "",
                 info.snippet,
             }, "\n")
             if type(arg) == "string" and arg:lower() == "yank" then
                 pcall(vim.fn.setreg, "+", text)
                 vim.fn.setreg('"', text)
-                vim.notify("flashback: schema 配置已复制到寄存器 +", vim.log.levels.INFO)
+                vim.notify(i18n.t("schema_copied"), vim.log.levels.INFO)
             else
                 vim.notify(text, vim.log.levels.INFO)
             end
-        end, "Show the murmur JSON schema path, URL and a jsonls snippet (:FlashbackSchema yank to copy)",
-            { nargs = "?" } },
+        end, i18n.t("cmd_schema"), { nargs = "?" } },
     }
 
     for _, d in ipairs(defs) do

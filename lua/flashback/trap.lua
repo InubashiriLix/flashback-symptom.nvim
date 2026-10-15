@@ -13,7 +13,7 @@ local M = {}
 
 local NS = vim.api.nvim_create_namespace("flashback_trap")
 
-local HINT = "键入以下内容以解脱："
+local i18n = require("flashback.i18n")
 
 vim.api.nvim_set_hl(0, "FlashbackTrapHint", { fg = "#888888", italic = true })
 vim.api.nvim_set_hl(0, "FlashbackTrapOk", { fg = "#50fa7b", bold = true })
@@ -44,9 +44,9 @@ local function redraw()
     end
     local target = state.target
     local lines = {
-        HINT,
+        i18n.t("trap_hint"),
         target,
-        string.format("[ %d / %d ]", state.index, state.total),
+        i18n.t("trap_progress", state.index, state.total),
     }
     local cut = byte_offset(target, state.index)
     local spans = {
