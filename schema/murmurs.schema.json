@@ -1,0 +1,356 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/InubashiriLix/flashback-symptom.nvim/main/schema/murmurs.schema.json",
+  "title": "flashback-symptom.nvim murmur material",
+  "description": "Murmur material for flashback-symptom.nvim. Define a palette, glyph pools, presets and the murmurs themselves.",
+  "type": "object",
+  "required": ["murmurs"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "指向本 schema 的地址，用于编辑器补全与校验。"
+    },
+    "palette": {
+      "type": "object",
+      "description": "命名调色板。style 里的颜色可以写 #RRGGBB，也可以写这里的键名。",
+      "additionalProperties": {
+        "type": "string",
+        "description": "颜色值，形如 #RRGGBB。"
+      }
+    },
+    "glyph_pools": {
+      "type": "object",
+      "description": "乱码字符池，供 glitch / decay 的 pool 参数引用。",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "一组用于替换的字符。"
+      }
+    },
+    "presets": {
+      "type": "object",
+      "description": "命名预设：一组 style + effects，murmur 用 \"preset\" 一键套用。",
+      "additionalProperties": { "$ref": "#/definitions/preset" }
+    },
+    "murmurs": {
+      "type": "array",
+      "description": "所有 murmur 素材。",
+      "items": { "$ref": "#/definitions/murmur" }
+    }
+  },
+  "definitions": {
+    "color": {
+      "type": "string",
+      "description": "颜色：\"#RRGGBB\"、调色板键名，或 \"random\"/\"theme\" 随机取色。"
+    },
+    "style": {
+      "type": "object",
+      "description": "文字样式。",
+      "properties": {
+        "fg": { "$ref": "#/definitions/color", "description": "前景色。" },
+        "bg": { "$ref": "#/definitions/color", "description": "背景色（会铺满整个浮窗）。" },
+        "sp": { "$ref": "#/definitions/color", "description": "undercurl 的特殊色。" },
+        "blend": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "窗口透明度 0..100。"
+        },
+        "attrs": {
+          "type": "array",
+          "description": "高亮属性。",
+          "items": {
+            "type": "string",
+            "enum": [
+              "bold", "italic", "underline", "undercurl", "underdouble",
+              "underdotted", "underdashed", "strikethrough", "reverse", "nocombine"
+            ]
+          }
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "description": "所有特效通用的时间轴参数。",
+      "properties": {
+        "delay": {
+          "type": "number",
+          "minimum": 0,
+          "description": "延迟多少毫秒后才开始这个特效。"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "特效持续多少毫秒，缺省为剩余全部时间。"
+        },
+        "priority": {
+          "type": "number",
+          "description": "同一通道冲突时的覆盖顺序，越大越后写（越优先）。"
+        }
+      }
+    },
+    "effectTypewriter": {
+      "description": "逐字吐出。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "speed": { "type": "number", "minimum": 1, "description": "每字毫秒数；缺省则把整句铺满 duration。" },
+            "min_speed": { "type": "number", "minimum": 1, "description": "自动速度下限（毫秒/字）。" },
+            "max_speed": { "type": "number", "minimum": 1, "description": "自动速度上限（毫秒/字）。" }
+          }
+        }
+      ]
+    },
+    "effectGlitch": {
+      "description": "随机字符变乱码，随后还原。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "color": { "$ref": "#/definitions/color", "description": "乱码字符的颜色。" },
+            "density": { "type": "number", "minimum": 0, "maximum": 1, "description": "每次刷新损坏的比例。" },
+            "interval": { "type": "number", "minimum": 1, "description": "刷新间隔（毫秒）。" },
+            "pool": {
+              "description": "字符池名（glyph_pools 的键）或直接给一个字符数组。",
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "effectDecay": {
+      "description": "乱码从零星到吞没整句，最后消失。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "color": { "$ref": "#/definitions/color", "description": "乱码字符的颜色。" },
+            "pool": {
+              "description": "字符池名或字符数组。",
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "density": { "type": "number", "minimum": 0, "description": "乱码密度系数。" }
+          }
+        }
+      ]
+    },
+    "effectCaret": {
+      "description": "打字机后面的闪烁光标。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "blink": { "type": "number", "minimum": 1, "description": "闪烁周期（毫秒）。" },
+            "glyph": { "type": "string", "description": "光标用的字符。" },
+            "color": { "$ref": "#/definitions/color", "description": "光标颜色。" }
+          }
+        }
+      ]
+    },
+    "effectRainbow": {
+      "description": "色相循环。per_char 为 true 时每个字不同色。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "speed": { "type": "number", "description": "色相流动速度。" },
+            "saturation": { "type": "number", "minimum": 0, "maximum": 1, "description": "饱和度。" },
+            "lightness": { "type": "number", "minimum": 0, "maximum": 1, "description": "亮度。" },
+            "per_char": { "type": "boolean", "description": "是否逐字不同色。" }
+          }
+        }
+      ]
+    },
+    "effectFlicker": {
+      "description": "前景色周期性跳到指定颜色。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "color": { "$ref": "#/definitions/color", "description": "闪烁到达的颜色。" },
+            "interval": { "type": "number", "minimum": 1, "description": "闪烁间隔（毫秒）。" }
+          }
+        }
+      ]
+    },
+    "effectPulse": {
+      "description": "透明度呼吸。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "min": { "type": "number", "minimum": 0, "maximum": 100, "description": "透明度下限。" },
+            "max": { "type": "number", "minimum": 0, "maximum": 100, "description": "透明度上限。" },
+            "period": { "type": "number", "minimum": 1, "description": "呼吸周期（毫秒）。" }
+          }
+        }
+      ]
+    },
+    "effectShake": {
+      "description": "窗口高频抖动。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "amplitude": { "type": "number", "minimum": 0, "description": "抖动幅度（格子）。" },
+            "frequency": { "type": "number", "minimum": 0, "description": "每秒抖动次数。" },
+            "axes": {
+              "type": "string",
+              "enum": ["both", "row", "col"],
+              "description": "抖动轴向。"
+            }
+          }
+        }
+      ]
+    },
+    "effectDrift": {
+      "description": "窗口缓慢漂浮。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "dx": { "type": "number", "description": "水平漂移幅度。" },
+            "dy": { "type": "number", "description": "垂直漂移幅度。" },
+            "period": { "type": "number", "minimum": 1, "description": "漂移周期（毫秒）。" }
+          }
+        }
+      ]
+    },
+    "effectFade": {
+      "description": "淡出（或淡入）。duration（通用参数）即淡出耗时。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "from": { "type": "number", "minimum": 0, "maximum": 100, "description": "起始透明度，缺省用当前值。" },
+            "to": { "type": "number", "minimum": 0, "maximum": 100, "description": "目标透明度，默认 100（完全消失）。" }
+          }
+        }
+      ]
+    },
+    "effectShadow": {
+      "description": "背后一层阴影窗。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "dx": { "type": "number", "description": "阴影水平偏移。" },
+            "dy": { "type": "number", "description": "阴影垂直偏移。" },
+            "color": { "$ref": "#/definitions/color", "description": "阴影颜色。" },
+            "blend": { "type": "number", "minimum": 0, "maximum": 100, "description": "阴影透明度。" }
+          }
+        }
+      ]
+    },
+    "effectVignette": {
+      "description": "屏幕四周暗角。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "color": { "$ref": "#/definitions/color", "description": "暗角颜色。" },
+            "strength": { "type": "number", "minimum": 0, "maximum": 1, "description": "强度 0..1。" },
+            "thickness": { "type": "number", "minimum": 1, "description": "边缘厚度（格子）。" }
+          }
+        }
+      ]
+    },
+    "effectCursorGlow": {
+      "description": "跟随光标的光晕。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "color": { "$ref": "#/definitions/color", "description": "光晕颜色。" },
+            "blend": { "type": "number", "minimum": 0, "maximum": 100, "description": "透明度。" },
+            "padding": { "type": "number", "minimum": 0, "description": "内边距。" }
+          }
+        }
+      ]
+    },
+    "effectCursorHarass": {
+      "description": "骚扰真实光标（默认在 config 里关闭）。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "interval": { "type": "number", "minimum": 1, "description": "骚扰间隔（毫秒）。" },
+            "amplitude": { "type": "number", "minimum": 1, "description": "每次挪动的列数。" },
+            "allow_insert": { "type": "boolean", "description": "是否允许在 insert 模式下骚扰。" }
+          }
+        }
+      ]
+    },
+    "effects": {
+      "type": "object",
+      "description": "要应用的特效集合。未指定时使用全局 effects.default_effects。也支持自定义特效（需先 register）。",
+      "properties": {
+        "typewriter": { "$ref": "#/definitions/effectTypewriter" },
+        "glitch": { "$ref": "#/definitions/effectGlitch" },
+        "decay": { "$ref": "#/definitions/effectDecay" },
+        "caret": { "$ref": "#/definitions/effectCaret" },
+        "rainbow": { "$ref": "#/definitions/effectRainbow" },
+        "flicker": { "$ref": "#/definitions/effectFlicker" },
+        "pulse": { "$ref": "#/definitions/effectPulse" },
+        "shake": { "$ref": "#/definitions/effectShake" },
+        "drift": { "$ref": "#/definitions/effectDrift" },
+        "fade": { "$ref": "#/definitions/effectFade" },
+        "shadow": { "$ref": "#/definitions/effectShadow" },
+        "vignette": { "$ref": "#/definitions/effectVignette" },
+        "cursor_glow": { "$ref": "#/definitions/effectCursorGlow" },
+        "cursor_harass": { "$ref": "#/definitions/effectCursorHarass" }
+      }
+    },
+    "preset": {
+      "type": "object",
+      "description": "一组 style + effects 的打包。",
+      "properties": {
+        "style": { "$ref": "#/definitions/style" },
+        "effects": { "$ref": "#/definitions/effects" }
+      }
+    },
+    "when": {
+      "type": "object",
+      "description": "这条 murmur 的触发标签（在全局 trigger 之外再加一层过滤）。",
+      "properties": {
+        "filetypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "只在这些 filetype 下出现。"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["insert", "normal", "visual", "replace", "cmd", "term"]
+          },
+          "description": "只在这些模式下出现。"
+        }
+      }
+    },
+    "murmur": {
+      "type": "object",
+      "description": "一条 murmur 素材。",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "description": "要喃喃自语的文字。" },
+        "color": { "$ref": "#/definitions/color", "description": "（旧字段）等同于 style.fg。" },
+        "style": { "$ref": "#/definitions/style", "description": "文字样式。" },
+        "preset": { "type": "string", "description": "先套用的预设名（会被本条 style / effects 覆盖）。" },
+        "duration": { "type": "number", "minimum": 1, "description": "显示时长（毫秒），默认 3000。" },
+        "weight": { "type": "number", "minimum": 0, "description": "触发权重，默认 1。" },
+        "effects": { "$ref": "#/definitions/effects" },
+        "trap": { "type": "boolean", "description": "是否劫持输入。" },
+        "unlock_text": { "type": "string", "description": "劫持后必须一字不差打出的文字，缺省取 text。" },
+        "when": { "$ref": "#/definitions/when" }
+      }
+    }
+  }
+}

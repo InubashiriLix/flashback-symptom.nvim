@@ -1,0 +1,154 @@
+{
+  // 这份文件就是 flashback-symptom.nvim 的「素材」。写注释也可以（JSONC）。
+  // $schema 指向仓库里的 schema —— 装了 jsonls 就会有补全和校验。
+  "$schema": "https://raw.githubusercontent.com/InubashiriLix/flashback-symptom.nvim/main/schema/murmurs.schema.json",
+
+  // ---------------------------------------------------------------------------
+  // palette：给颜色起名字，下面 style 里直接写名字即可
+  // ---------------------------------------------------------------------------
+  "palette": {
+    "blood": "#ff5555",
+    "ice": "#8be9fd",
+    "moss": "#50fa7b",
+    "sun": "#f1fa8c",
+    "grape": "#bd93f9",
+    "rose": "#ff79c6",
+    "amber": "#ffb86c",
+    "ink": "#1a0000"
+  },
+
+  // ---------------------------------------------------------------------------
+  // glyph_pools：乱码字符池，glitch / decay 的 pool 参数引用这些名字
+  // ---------------------------------------------------------------------------
+  "glyph_pools": {
+    "katakana": ["ﾊ", "ﾋ", "ﾌ", "ﾍ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ"],
+    "blocks": ["░", "▒", "▓", "█", "▚", "▞"],
+    "symbols": ["※", "∷", "∴", "⌁", "％", "＃", "＠", "＆", "＊"]
+  },
+
+  // ---------------------------------------------------------------------------
+  // presets：一组 style + effects 的打包，murmur 用 "preset" 一键套用
+  // ---------------------------------------------------------------------------
+  "presets": {
+    "horror": {
+      "style": { "fg": "blood", "bg": "ink", "attrs": ["bold"] },
+      "effects": {
+        "glitch": { "color": "#ff00ff", "density": 0.2, "pool": "blocks" },
+        "shake": { "amplitude": 1, "frequency": 6 },
+        "vignette": { "strength": 0.6, "color": "#000000" }
+      }
+    },
+    "dreamy": {
+      "style": { "fg": "ice", "attrs": ["italic"] },
+      "effects": {
+        "typewriter": { "speed": 55 },
+        "rainbow": { "speed": 18, "per_char": true },
+        "drift": { "dy": 1, "dx": 1, "period": 3500 },
+        "shadow": { "dx": 1, "dy": 1, "color": "#001018", "blend": 70 }
+      }
+    },
+    "panic": {
+      "style": { "fg": "sun", "bg": "#330000" },
+      "effects": {
+        "glitch": { "color": "rose", "density": 0.35, "interval": 40 },
+        "shake": { "amplitude": 2, "frequency": 14 },
+        "fade": { "duration": 700 },
+        "cursor_glow": { "color": "rose", "blend": 60 }
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // murmurs：真正会闪出来的句子
+  //   text     必填
+  //   duration 毫秒（默认 3000）  weight 触发权重（默认 1）
+  //   effects  具名表；可带 delay/duration 做时间轴编排
+  //   trap     true 时会劫持你的键盘，直到你一字不差打出 unlock_text
+  //   when     可选：只在指定 filetype / 模式下出现
+  // ---------------------------------------------------------------------------
+  "murmurs": [
+    {
+      "text": "你确定这里不需要判空吗？",
+      "preset": "horror",
+      "duration": 3200,
+      "weight": 3
+    },
+    {
+      "text": "上次这个 bug 也是从这儿冒出来的",
+      "style": { "fg": "sun" },
+      "effects": { "typewriter": { "speed": 45 } },
+      "duration": 3500
+    },
+    {
+      "text": "要不要先写个测试？",
+      "preset": "dreamy",
+      "duration": 4000
+    },
+    {
+      "text": "困了就睡，别硬撑",
+      "style": { "fg": "moss" },
+      "effects": { "pulse": { "min": 0, "max": 60, "period": 1200 } },
+      "duration": 4000
+    },
+    {
+      "text": "这就是你昨天说『马上就好』的地方",
+      "style": { "fg": "grape" },
+      "effects": {
+        "glitch": { "color": "grape", "density": 0.1 },
+        "caret": { "blink": 350 }
+      },
+      "duration": 3500
+    },
+    {
+      "text": "深呼吸，你还能再来一轮",
+      "preset": "panic",
+      "duration": 3000,
+      "weight": 2
+    },
+    {
+      "text": "等等，我是不是忘了 commit",
+      "style": { "fg": "amber" },
+      "effects": {
+        "typewriter": { "speed": 30 },
+        // delay：先安静地打字，900ms 之后才开始乱码
+        "glitch": { "delay": 900, "color": "amber", "density": 0.15 }
+      },
+      "duration": 3600
+    },
+    {
+      "text": "你在逃避真正该改的那一行",
+      "preset": "horror",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 4000,
+      "when": { "modes": ["normal"] }
+    },
+    {
+      "text": "我没事，我很好",
+      "preset": "dreamy",
+      "duration": 6000,
+      "trap": true,
+      "weight": 1
+    },
+    {
+      "text": "请把我写完",
+      "style": { "fg": "moss" },
+      "effects": { "decay": { "color": "moss", "pool": "blocks" } },
+      "duration": 6000,
+      "trap": true,
+      "unlock_text": "请把我写完"
+    },
+    {
+      "text": "还没到下班时间",
+      "preset": "panic",
+      "duration": 5000,
+      "trap": true,
+      "weight": 1
+    },
+    {
+      "text": "记得喝水",
+      "style": { "fg": "sun" },
+      "effects": { "rainbow": { "per_char": true, "speed": 30 } },
+      "duration": 3000
+    }
+  ]
+}
