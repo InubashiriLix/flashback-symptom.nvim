@@ -29,7 +29,9 @@ flashback-symptom.nvim 会在你写代码时凭空弹出带颜色的「喃喃自
 15. 多语言 ........................................ |flashback-i18n|
 16. 健康检查 ...................................... |flashback-health|
 17. 安全性 ........................................ |flashback-safety|
-18. 许可 .......................................... |flashback-license|
+18. 显示模式 ...................................... |flashback-display|
+19. 键盘劫持 ...................................... |flashback-hijack|
+20. 许可 .......................................... |flashback-license|
 
 ==============================================================================
 1. 简介							*flashback-intro*
@@ -69,6 +71,10 @@ Lua 模块名是 `flashback`。
     timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
 
     render = {
+      mode = "float",       -- "float" | "large" | "overlay"   |flashback-display|
+      large   = { cover = 0.6, align = "center", padding = 2, border = "rounded" },
+      overlay = { cover = 1.0, align = "center", padding = 3, border = "none",
+                  opaque = true },
       position = "random",  -- "random" | "corner" | "cursor"
       corner = "botright",
       cursor_offset = { row = 1, col = 0 },
@@ -107,6 +113,8 @@ Lua 模块名是 `flashback`。
 
     stats = { enabled = true, path = nil, achievements = true },
     feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+    hijack = { enabled = true, only_fullscreen = true },   |flashback-hijack|
 
     lsp = {                                                |flashback-lsp|
       enabled = true,
@@ -244,12 +252,25 @@ setup() 是可选的。调用它会重建命令、加载素材、初始化统计
 	drift		缓慢漂浮				`dx` `dy` `period`
 	fade		淡出（或淡入）				`from` `to`
 	shadow		窗口背后的一层阴影窗			`dx` `dy` `color` `blend`
+	grow		窗口长大到目标尺寸			`from` `to` `anchor` `easing`
+	shrink		窗口缩到没有				`from` `to` `anchor` `easing`
+	wipe		从某条边像窗帘一样揭开			`anchor` `duration` `easing`
+
+`grow` / `shrink` / `wipe` 改的是窗口矩形（见 |flashback-display|）；
+`anchor` 决定从哪儿长出来（center/top/bottom/left/right）。`from` / `to` 是
+覆盖比例，缺省等于该显示模式的 `cover`。
 
 屏幕通道（同一时刻只有一条 murmur 能占据屏幕）：
 
 	vignette	屏幕四周变暗				`color` `strength` `thickness`
 	cursor_glow	跟随光标的光晕				`color` `blend` `padding`
 	cursor_harass	骚扰真实光标				`interval` `amplitude` `allow_insert`
+							`axes` `jump` `jump_chance`
+	cursor_grab	抓取并锁住真实光标			`to` `insert`
+
+`cursor_grab` 的 `to = "keep"` 把光标就地定住；`to = "center"` 把它拉到窗口
+中央。原本的窗口与行列一定会被还原；除非 `insert = true`，否则 insert 模式下
+不会抓取。
 
 `cursor_harass` 还需要在 setup 里设 `screen.cursor_harass.enabled = true`；
 因为它会碰你的光标，默认关闭。
@@ -364,7 +385,48 @@ setup() 是可选的。调用它会重建命令、加载素材、初始化统计
 你的窗口布局、光标位置、模式和自有窗口的选项都保持不变。
 
 ==============================================================================
-18. 许可						*flashback-license*
+18. 显示模式						*flashback-display*
+
+每条 murmur 由三种显示模式之一绘制：
+
+	"float"		经典的按文字大小自适应的小浮窗
+	"large"		大窗（默认占编辑器区 60%），按 `render.position` 摆放
+	"overlay"	铺满编辑器（默认 100%），文字居中
+
+全局默认由 `render.mode` 决定；任何一条 murmur 都能覆盖它： >
+
+	"display": {
+	  "mode": "overlay",
+	  "cover": 1.0,        "占编辑器区的比例 0.01~1"
+	  "align": "center",   "center/top/bottom/left/right/..."
+	  "padding": 3,        "文字块四周的留白格数"
+	  "border": "none",    "或 rounded/single/..."
+	  "opaque": true,      "false 时会隐约透出背后的代码"
+	}
+<
+
+`align` 既决定窗口在编辑器区里的位置，也决定文字块在窗口内的对齐；所以
+`"center"` 就是居中大窗，`"top"` 则把文字顶到上边缘。
+
+`opaque`（默认）会把 `style.bg` 的背景色铺满整个窗口，因此 `overlay` 是
+真的把编辑器盖住。
+
+窗口矩形可以由 `grow` / `shrink` / `wipe` 做动画。
+
+==============================================================================
+19. 键盘劫持						*flashback-hijack*
+
+当全屏 `overlay` murmur 出现且 `hijack.enabled` 打开时，所有按键都会被吞掉，
+让它真的占据你。murmur 结束时自动放行。
+
+唯一的出路是硬编码的**连按两次 <Esc>**，它无法关闭——一个没有逃生口的全屏
+输入抓取就是个坑。`trap` 生效期间不会启动 hijack，那种情况下键盘归 trap。
+
+`hijack.only_fullscreen`（默认 true）只对真正铺满编辑器的 overlay 夺键；
+设为 false 则 `large` 大窗也会夺键。
+
+==============================================================================
+20. 许可						*flashback-license*
 
 MIT。见仓库中的 LICENSE 文件。
 

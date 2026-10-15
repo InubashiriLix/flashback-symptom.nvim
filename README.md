@@ -14,13 +14,15 @@ until you retype the prompt character for character.
 
 - **Composer-driven effects** — one frame clock, per-effect timeline, so effects
   compose instead of fighting over the same window.
-- **14 built-in effects** across text / style / window / screen channels, plus a
+- **18 built-in effects** across text / style / window / screen channels, plus a
   three-phase API so you can register your own.
+- **Small, large or full-screen** — a murmur can be a tiny float, a 60% window,
+  or a full-screen takeover with an opaque background that hides everything.
 - **Declarative material** — JSONC with palette, presets, glyph pools, weights
   and per-murmur trigger tags.
 - **JSON Schema** for the material, auto-injected into `jsonls`.
-- **Strict safety** — only ever touches its own float windows, and `stop()` puts
-  everything back.
+- **Strict safety** — only ever touches windows it created, always restores the
+  cursor, and `stop()` puts everything back.
 
 ## Install
 
@@ -48,6 +50,10 @@ require("flashback").setup({
   timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
 
   render = {
+    mode = "float",             -- "float" | "large" | "overlay"
+    large   = { cover = 0.6, align = "center", padding = 2, border = "rounded" },
+    overlay = { cover = 1.0, align = "center", padding = 3, border = "none",
+                opaque = true },
     position = "random",        -- "random" | "corner" | "cursor"
     corner = "botright",
     cursor_offset = { row = 1, col = 0 },
@@ -95,6 +101,11 @@ require("flashback").setup({
 
   stats = { enabled = true, path = nil, achievements = true },
   feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+  hijack = {                    -- full-screen overlays swallow the keyboard
+    enabled = true,             -- the double-<Esc> escape is always available
+    only_fullscreen = true,
+  },
 
   lsp = {
     enabled = true,
@@ -208,9 +219,13 @@ effect writes into a shared frame, so any combination composes.
 | `drift` | win | slow floaty drift |
 | `fade` | win | fades out (or in) |
 | `shadow` | win | a darker copy behind the window |
+| `grow` | win | grows the window up to its size |
+| `shrink` | win | shrinks the window away |
+| `wipe` | win | curtain reveal from one edge |
 | `vignette` | screen | darkens the screen edges |
 | `cursor_glow` | screen | a halo that follows the cursor |
 | `cursor_harass` | screen | nudges the real cursor (off by default!) |
+| `cursor_grab` | screen | grabs and holds the real cursor, then restores it |
 
 Every effect accepts `delay` / `duration` for timeline scheduling and `priority`
 for write order within a channel.
@@ -231,6 +246,48 @@ require("flashback.effects").register("my_fx", {
 ```
 
 Effects only write into `frame` / `ctx.text`; the composer applies the result.
+
+## Display modes
+
+A murmur is drawn by one of three display modes:
+
+| mode | size | placement | notes |
+| --- | --- | --- | --- |
+| `float` | text size + 2 | `render.position` | the classic small window |
+| `large` | 60% of the editor by default | `render.position` | big, still leaves the frame visible |
+| `overlay` | 100% of the editor by default | centred | hides everything behind it |
+
+Set the global default with `render.mode` and override it per murmur:
+
+```jsonc
+"display": {
+  "mode": "overlay",
+  "cover": 1.0,        // 0.01..1 of the editor area
+  "align": "center",   // center/top/bottom/left/right/...
+  "padding": 3,        // blank cells around the text block
+  "border": "none",    // or rounded/single/...
+  "opaque": true       // false lets the code show through
+}
+```
+
+With `opaque` (the default) `style.bg` is painted across the whole window, so an
+overlay really does black out the editor. `align` both places the window and
+aligns the text inside it.
+
+The window rect is animated by `grow` / `shrink` / `wipe`; `anchor` decides
+where it grows from (`center` grows out of the middle, `top` is a curtain).
+
+## The keyboard hijack
+
+A full-screen `overlay` swallows every keystroke while it is on screen
+(`hijack.enabled`), so it really occupies you. It is released when the murmur
+ends.
+
+> [!CAUTION]
+> The only way out is a hard-coded **double `<Esc>`**, and it cannot be
+> disabled. A full-screen input grab with no escape hatch would be a foot-gun.
+
+A `trap` always wins: while one is active the hijack never starts.
 
 ## Triggers
 
@@ -316,6 +373,7 @@ nvim --headless -l spec/side_effects.lua   # window-system integrity (the import
 nvim --headless -l spec/jsonc.lua          # JSONC parsing
 nvim --headless -l spec/schema.lua         # schema / registry / example drift guard
 nvim --headless -l spec/lsp.lua            # jsonls injection (non-destructive + idempotent)
+nvim --headless -l spec/overlay.lua        # large/overlay geometry, size animation, hijack, cursor grab
 ```
 
 ## License

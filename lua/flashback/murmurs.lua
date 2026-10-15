@@ -4,6 +4,7 @@
 ---@field duration number the duration of the murmur in milliseconds
 ---@field effects table<string, table> named effects with their parameters
 ---@field weight number relative trigger weight
+---@field display table|nil per-murmur display overrides (mode/cover/align/padding/border/opaque)
 ---@field trap boolean|nil whether this murmur hijacks the user's input
 ---@field unlock_text string|nil text the user must type to escape a trap
 ---@field when table|nil per-murmur trigger tags (filetypes/modes)
@@ -39,6 +40,7 @@ function M.new(text, style, duration)
         duration = duration or 3000,
         effects = {},
         weight = 1,
+        display = nil,
         trap = false,
         unlock_text = nil,
         when = nil,

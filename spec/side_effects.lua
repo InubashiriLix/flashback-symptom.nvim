@@ -158,6 +158,8 @@ local screen = require("flashback.screen")
 local renderer = require("flashback.renderer")
 local trap = require("flashback.trap")
 local stats = require("flashback.stats")
+local hijack = require("flashback.hijack")
+local pos = require("flashback.renderers.pos")
 
 fb.setup({
     autostart = false,
@@ -240,6 +242,81 @@ vim.wait(80)
 check(not trap.is_active(), "trap released after typing the target")
 check(vim.deep_equal(vim.api.nvim_win_get_cursor(0), before.cursor), "cursor untouched by trap")
 
+print("fullscreen overlay + hijack + cursor grab")
+do
+    fb.emit({
+        murmur = {
+            text = "FULLSCREEN TAKEOVER",
+            style = { fg = "#ffffff", bg = "#000000" },
+            duration = 6000,
+            weight = 1,
+            display = { mode = "overlay", cover = 1.0, padding = 3, border = "none", opaque = true },
+            effects = {
+                grow = { duration = 50 },
+                cursor_grab = { to = "keep", insert = false },
+                typewriter = {},
+            },
+            id = 888,
+        },
+    })
+    vim.wait(400)
+    check(hijack.is_active(), "fullscreen murmur hijacks the keyboard")
+    check(screen.is_active(), "cursor_grab drives the screen host")
+
+    local ow, oh = pos.area()
+    local overlay_win = renderer._active[#renderer._active]
+    check(overlay_win ~= nil and vim.api.nvim_win_is_valid(overlay_win.win), "overlay window exists")
+    if overlay_win and vim.api.nvim_win_is_valid(overlay_win.win) then
+        check(vim.api.nvim_win_get_width(overlay_win.win) == ow
+            and vim.api.nvim_win_get_height(overlay_win.win) == oh, "overlay covers the whole editor area")
+    end
+
+    local ok_ov, why_ov = editor_intact(before)
+    check(ok_ov, "fullscreen overlay keeps editor state intact (" .. tostring(why_ov) .. ")")
+
+    -- the hard-coded panic chain must always free the keyboard
+    vim.api.nvim_feedkeys("\27\27", "xt", false)
+    vim.wait(60)
+    check(not hijack.is_active(), "double <Esc> escapes the fullscreen hijack")
+
+    fb.stop()
+    vim.wait(150)
+    local ok_after, why_after = intact(before)
+    check(ok_after, "editor fully restored after the overlay run (" .. tostring(why_after) .. ")")
+    check(not screen.is_active(), "screen host torn down after the overlay run")
+end
+
+print("cursor grab restores the cursor")
+do
+    -- enough lines that "center" has somewhere to go
+    local many = {}
+    for i = 1, 20 do
+        many[i] = "line " .. i
+    end
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, many)
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    before.cursor = vim.api.nvim_win_get_cursor(0)
+
+    fb.emit({
+        murmur = {
+            text = "CENTER",
+            style = { fg = "#ffffff", bg = "#000000" },
+            duration = 6000,
+            weight = 1,
+            display = { mode = "overlay", cover = 1.0, border = "none" },
+            effects = { cursor_grab = { to = "center", insert = false } },
+            id = 889,
+        },
+    })
+    vim.wait(250)
+    local moved = not vim.deep_equal(vim.api.nvim_win_get_cursor(0), before.cursor)
+    check(moved, "to=center really moves the cursor")
+    fb.stop()
+    vim.wait(150)
+    check(vim.deep_equal(vim.api.nvim_win_get_cursor(0), before.cursor),
+        "cursor restored exactly after a centre grab + stop()")
+end
+
 print("stop")
 fb.stop()
 vim.wait(150)
@@ -256,7 +333,7 @@ check(not augroup_exists("FlashbackEvents"), "FlashbackEvents augroup removed")
 
 -- The buffer must still be editable (no stuck modifiable=false, no stuck on_key).
 local tick = vim.api.nvim_buf_get_changedtick(0)
-vim.api.nvim_feedkeys("X", "xt", false)
+vim.api.nvim_feedkeys("izz\27", "xt", false)
 vim.wait(30)
 check(vim.api.nvim_buf_get_changedtick(0) > tick, "keys reach the editor again (no stuck input hook)")
 

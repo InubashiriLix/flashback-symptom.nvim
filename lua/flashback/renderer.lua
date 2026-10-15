@@ -21,19 +21,28 @@ function M.register(name, impl)
     M._impls[name] = impl
 end
 
+--- Renderer names are user-facing display modes; large/overlay share one module.
+---@type table<string, string>
+local MODULE = {
+    float = "float",
+    large = "overlay",
+    overlay = "overlay",
+}
+
 --- Resolve a renderer by name, lazily requiring renderers/<name>.
 ---@param name string?
 ---@return Renderer|nil
 function M.get(name)
     name = name or "float"
-    if M._impls[name] then
-        return M._impls[name]
+    local module_name = MODULE[name] or name
+    if M._impls[module_name] then
+        return M._impls[module_name]
     end
-    local ok, impl = pcall(require, "flashback.renderers." .. name)
+    local ok, impl = pcall(require, "flashback.renderers." .. module_name)
     if not ok or type(impl) ~= "table" then
         return nil
     end
-    M._impls[name] = impl
+    M._impls[module_name] = impl
     return impl
 end
 

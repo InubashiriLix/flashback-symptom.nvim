@@ -62,7 +62,8 @@ local builtin = {
     "typewriter", "glitch", "decay", "caret",
     "rainbow", "flicker", "pulse",
     "shake", "drift", "fade", "shadow",
-    "vignette", "cursor_glow", "cursor_harass",
+    "grow", "shrink", "wipe",
+    "vignette", "cursor_glow", "cursor_harass", "cursor_grab",
 }
 
 for _, name in ipairs(builtin) do

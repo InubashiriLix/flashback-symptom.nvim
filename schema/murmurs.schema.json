@@ -283,10 +283,82 @@
           "properties": {
             "interval": { "type": "number", "minimum": 1, "description": "骚扰间隔（毫秒）。" },
             "amplitude": { "type": "number", "minimum": 1, "description": "每次挪动的列数。" },
-            "allow_insert": { "type": "boolean", "description": "是否允许在 insert 模式下骚扰。" }
+            "allow_insert": { "type": "boolean", "description": "是否允许在 insert 模式下骚扰。" },
+            "axes": { "type": "string", "enum": ["col", "both"], "description": "只在列上挪，还是行列都挪。" },
+            "jump": { "type": "number", "minimum": 2, "description": "偶发大跳的倍数。" },
+            "jump_chance": { "type": "number", "minimum": 0, "maximum": 1, "description": "偶发大跳的概率。" }
           }
         }
       ]
+    },
+    "effectResize": {
+      "description": "尺寸动画的核心参数（grow / shrink / wipe 共用）。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "from": { "type": "number", "minimum": 0, "maximum": 1, "description": "起始覆盖比例（0~1），缺省 = 目标比例。" },
+            "to": { "type": "number", "minimum": 0, "maximum": 1, "description": "结束覆盖比例（0~1），缺省 = 目标比例。" },
+            "anchor": {
+              "type": "string",
+              "enum": ["center", "top", "bottom", "left", "right", "topleft", "topright", "botleft", "botright"],
+              "description": "窗口从哪里长出来。"
+            },
+            "easing": { "type": "string", "enum": ["linear", "ease-out"], "description": "缓动方式。" }
+          }
+        }
+      ]
+    },
+    "effectGrow": {
+      "description": "入场尺寸动画：从一点长到目标大小。",
+      "allOf": [{ "$ref": "#/definitions/effectResize" }]
+    },
+    "effectShrink": {
+      "description": "退场尺寸动画：缩到没有。",
+      "allOf": [{ "$ref": "#/definitions/effectResize" }]
+    },
+    "effectWipe": {
+      "description": "擦除式揭开：从某条边展开（anchor 决定哪条边）。",
+      "allOf": [{ "$ref": "#/definitions/effectResize" }]
+    },
+    "effectCursorGrab": {
+      "description": "抓取并锁定真实光标，结束后原样还原。",
+      "allOf": [
+        { "$ref": "#/definitions/timing" },
+        {
+          "properties": {
+            "to": { "type": "string", "enum": ["keep", "center"], "description": "keep = 原地锁死；center = 拉到窗口中央。" },
+            "insert": { "type": "boolean", "description": "是否允许在 insert 模式下抓取（默认 false）。" }
+          }
+        }
+      ]
+    },
+    "display": {
+      "type": "object",
+      "description": "逐条 murmur 的显示方式覆盖（默认由 config.render.mode 决定）。",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["float", "large", "overlay"],
+          "description": "float = 小浮窗；large = 大面积；overlay = 全屏接管。"
+        },
+        "cover": { "type": "number", "minimum": 0.01, "maximum": 1, "description": "占编辑器区的比例（0~1）。" },
+        "align": {
+          "type": "string",
+          "enum": ["center", "top", "bottom", "left", "right", "topleft", "topright", "botleft", "botright"],
+          "description": "窗口在屏幕中的位置，同时决定文字块在窗口内的对齐。"
+        },
+        "padding": { "type": "integer", "minimum": 0, "description": "文字块四周留白（格）。" },
+        "blend": { "type": "number", "minimum": 0, "maximum": 100, "description": "opaque=false 时的默认透明度。" },
+        "border": {
+          "description": "边框样式，如 \"none\"、\"rounded\"。",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "opaque": { "type": "boolean", "description": "背景是否完全不透明（默认 true）。" }
+      }
     },
     "effects": {
       "type": "object",
@@ -303,9 +375,13 @@
         "drift": { "$ref": "#/definitions/effectDrift" },
         "fade": { "$ref": "#/definitions/effectFade" },
         "shadow": { "$ref": "#/definitions/effectShadow" },
+        "grow": { "$ref": "#/definitions/effectGrow" },
+        "shrink": { "$ref": "#/definitions/effectShrink" },
+        "wipe": { "$ref": "#/definitions/effectWipe" },
         "vignette": { "$ref": "#/definitions/effectVignette" },
         "cursor_glow": { "$ref": "#/definitions/effectCursorGlow" },
-        "cursor_harass": { "$ref": "#/definitions/effectCursorHarass" }
+        "cursor_harass": { "$ref": "#/definitions/effectCursorHarass" },
+        "cursor_grab": { "$ref": "#/definitions/effectCursorGrab" }
       }
     },
     "preset": {
@@ -349,7 +425,8 @@
         "effects": { "$ref": "#/definitions/effects" },
         "trap": { "type": "boolean", "description": "是否劫持输入。" },
         "unlock_text": { "type": "string", "description": "劫持后必须一字不差打出的文字，缺省取 text。" },
-        "when": { "$ref": "#/definitions/when" }
+        "when": { "$ref": "#/definitions/when" },
+        "display": { "$ref": "#/definitions/display" }
       }
     }
   }

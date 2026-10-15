@@ -30,7 +30,9 @@ CONTENTS						*flashback-contents*
 15. Language ...................................... |flashback-i18n|
 16. Health ........................................ |flashback-health|
 17. Safety ........................................ |flashback-safety|
-18. License ....................................... |flashback-license|
+18. Display modes ................................. |flashback-display|
+19. The keyboard hijack ........................... |flashback-hijack|
+20. License ....................................... |flashback-license|
 
 ==============================================================================
 1. INTRODUCTION						*flashback-intro*
@@ -70,6 +72,10 @@ The Lua module is `flashback`.
     timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
 
     render = {
+      mode = "float",       -- "float" | "large" | "overlay"   |flashback-display|
+      large   = { cover = 0.6, align = "center", padding = 2, border = "rounded" },
+      overlay = { cover = 1.0, align = "center", padding = 3, border = "none",
+                  opaque = true },
       position = "random",  -- "random" | "corner" | "cursor"
       corner = "botright",
       cursor_offset = { row = 1, col = 0 },
@@ -108,6 +114,8 @@ The Lua module is `flashback`.
 
     stats = { enabled = true, path = nil, achievements = true },
     feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+    hijack = { enabled = true, only_fullscreen = true },   |flashback-hijack|
 
     lsp = {                                                |flashback-lsp|
       enabled = true,
@@ -248,12 +256,26 @@ Window channel:
 	drift		slow floaty drift			`dx` `dy` `period`
 	fade		fades out (or in)			`from` `to`
 	shadow		a darker copy behind the window		`dx` `dy` `color` `blend`
+	grow		grows the window up to its size		`from` `to` `anchor` `easing`
+	shrink		shrinks the window away			`from` `to` `anchor` `easing`
+	wipe		curtain reveal from one edge		`anchor` `duration` `easing`
+
+`grow` / `shrink` / `wipe` animate the window rect (|flashback-display|); the
+`anchor` decides where it grows from (center/top/bottom/left/right). `from` and
+`to` are cover fractions and default to the display's `cover`.
 
 Screen channel (one murmur may own the screen at a time):
 
 	vignette	darkens the screen edges		`color` `strength` `thickness`
 	cursor_glow	a halo that follows the cursor		`color` `blend` `padding`
 	cursor_harass	nudges the real cursor			`interval` `amplitude` `allow_insert`
+			`axes` `jump` `jump_chance`
+	cursor_grab	grabs and holds the real cursor		`to` `insert`
+
+`cursor_grab` with `to = "keep"` freezes the cursor where it is; `to = "center"`
+pulls it to the middle of the window. The original window and position are
+always restored, and it refuses to run while in insert mode unless
+`insert = true`.
 
 `cursor_harass` also needs `screen.cursor_harass.enabled = true` in setup; it is
 off by default because it touches your cursor.
@@ -378,7 +400,52 @@ cursor position, mode and the options of your own windows are unchanged after a
 full run.
 
 ==============================================================================
-18. LICENSE						*flashback-license*
+18. DISPLAY MODES					*flashback-display*
+
+A murmur is drawn by one of three display modes:
+
+	"float"		the classic small window sized to its text
+	"large"		a big window (default 60% of the editor area) placed by
+			`render.position`
+	"overlay"	a full-editor window (default 100%) with the text centred
+
+The global default is `render.mode`; any murmur can override it: >
+
+	"display": {
+	  "mode": "overlay",
+	  "cover": 1.0,        "0.01..1 of the editor area"
+	  "align": "center",   "center/top/bottom/left/right/..."
+	  "padding": 3,        "blank cells around the text block"
+	  "border": "none",    "or rounded/single/..."
+	  "opaque": true,      "false shows the code behind the overlay"
+	}
+<
+
+`align` positions the window inside the editor area and also aligns the text
+block inside the window, so `"center"` gives you a centred overlay while
+`"top"` pins the text to the top edge.
+
+With `opaque` (the default) the background colour from `style.bg` is painted
+across the whole window, so an `overlay` really does hide the editor.
+
+The window rect can be animated with the `grow` / `shrink` / `wipe` effects.
+
+==============================================================================
+19. THE KEYBOARD HIJACK					*flashback-hijack*
+
+When a full-screen `overlay` murmur appears and `hijack.enabled` is set, every
+keystroke is swallowed, so the murmur really occupies you. It is released when
+the murmur ends.
+
+The one way out is a hard-coded double <Esc>. It cannot be disabled: a
+full-screen input grab without an escape hatch is a foot-gun. `hijack` never
+starts while a `trap` is active; the trap owns the keyboard in that case.
+
+`hijack.only_fullscreen` (default true) limits the grab to overlays that really
+cover the editor; set it to false to hijack for `large` windows too.
+
+==============================================================================
+20. LICENSE						*flashback-license*
 
 MIT. See the LICENSE file in the repository.
 

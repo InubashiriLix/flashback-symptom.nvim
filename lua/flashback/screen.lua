@@ -17,6 +17,7 @@ local owner = nil
 local vign = { wins = {}, bufs = {}, active = false, spec = nil }
 local glow = { win = nil, buf = nil, active = false, spec = nil, group = nil }
 local harass = { active = false, timer = nil, orig_win = nil, orig = nil }
+local grab = { active = false, timer = nil, win = nil, orig = nil, hold = nil, spec = nil }
 local resize_group = nil
 
 ---@return number, number
@@ -191,7 +192,7 @@ local function harass_apply(spec)
     harass.orig = ok and pos or nil
 
     harass.timer = uv.new_timer()
-    local interval = math.max(200, spec.interval or 900)
+    local interval = math.max(200, spec.interval or 700)
     harass.timer:start(interval, interval, function()
         vim.schedule(function()
             if not harass.active then
@@ -207,12 +208,85 @@ local function harass_apply(spec)
             local cur = vim.api.nvim_win_get_cursor(w)
             local amp = math.max(1, spec.amplitude or 1)
             local delta = (math.random(0, 1) == 0) and -amp or amp
-            pcall(vim.api.nvim_win_set_cursor, w, { cur[1], math.max(0, cur[2] + delta) })
+            if spec.jump and math.random() < (spec.jump_chance or 0.15) then
+                delta = delta * math.max(2, spec.jump)
+            end
+            local target = { cur[1], math.max(0, cur[2] + delta) }
+            if spec.axes == "both" then
+                local last = math.max(1, vim.api.nvim_buf_line_count(0))
+                local row = cur[1] + ((math.random(0, 1) == 0) and -1 or 1)
+                target[1] = math.min(last, math.max(1, row))
+            end
+            pcall(vim.api.nvim_win_set_cursor, w, target)
             vim.defer_fn(function()
                 if harass.active and vim.api.nvim_win_is_valid(w) then
                     pcall(vim.api.nvim_win_set_cursor, w, cur)
                 end
             end, 150)
+        end)
+    end)
+end
+
+local function grab_clear()
+    grab.active = false
+    if grab.timer and not grab.timer:is_closing() then
+        grab.timer:stop()
+        grab.timer:close()
+    end
+    grab.timer = nil
+    -- Always restore the exact cursor we captured, in the exact window.
+    if grab.win and grab.orig and vim.api.nvim_win_is_valid(grab.win) then
+        pcall(vim.api.nvim_win_set_cursor, grab.win, grab.orig)
+    end
+    grab.win, grab.orig, grab.hold, grab.spec = nil, nil, nil, nil
+end
+
+---@param spec table
+local function grab_apply(spec)
+    if grab.active then
+        return
+    end
+    -- Never yank the cursor out from under someone who is typing.
+    if not spec.insert and vim.fn.mode():sub(1, 1) == "i" then
+        return
+    end
+
+    local win = vim.api.nvim_get_current_win()
+    local ok, pos = pcall(vim.api.nvim_win_get_cursor, win)
+    if not ok then
+        return
+    end
+
+    grab.active = true
+    grab.win = win
+    grab.orig = pos
+    grab.hold = pos
+    grab.spec = spec
+
+    if spec.to == "center" then
+        local h = vim.api.nvim_win_get_height(win)
+        local top = vim.fn.line("w0")
+        local last = math.max(1, vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(win)))
+        local row = math.min(last, math.max(1, top + math.floor(h / 2) - 1))
+        local target = { row, 0 }
+        pcall(vim.api.nvim_win_set_cursor, win, target)
+        grab.hold = target
+    end
+
+    grab.timer = uv.new_timer()
+    grab.timer:start(80, 80, function()
+        vim.schedule(function()
+            if not grab.active then
+                return
+            end
+            local w = grab.win
+            if not w or not vim.api.nvim_win_is_valid(w) or vim.api.nvim_get_current_win() ~= w then
+                return
+            end
+            if not (grab.spec and grab.spec.insert) and vim.fn.mode():sub(1, 1) == "i" then
+                return
+            end
+            pcall(vim.api.nvim_win_set_cursor, w, grab.hold)
         end)
     end)
 end
@@ -268,6 +342,12 @@ function M.update(key, spec)
     else
         harass_clear()
     end
+
+    if spec.cursor_grab then
+        grab_apply(spec.cursor_grab)
+    else
+        grab_clear()
+    end
 end
 
 ---@param key any
@@ -282,12 +362,13 @@ function M.teardown()
     vign_clear()
     glow_clear()
     harass_clear()
+    grab_clear()
     delete_resize_autocmd()
 end
 
 ---@return boolean
 function M.is_active()
-    return vign.active or glow.active or harass.active
+    return vign.active or glow.active or harass.active or grab.active
 end
 
 return M

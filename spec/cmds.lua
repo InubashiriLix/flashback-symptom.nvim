@@ -28,6 +28,12 @@ check(merged.timer.timer_num == 9, "setup overrides timer_num")
 check(merged.timer.interval_ms == configs.defaults.timer.interval_ms, "setup keeps defaults")
 check(merged.effects.enabled.glitch == true, "effects.enabled present")
 
+-- default_effects is a set: passing one must replace it, not merge into it.
+local cleared = configs.setup({ effects = { default_effects = {} } })
+check(vim.tbl_count(cleared.effects.default_effects) == 0, "default_effects = {} clears the default set")
+local kept = configs.setup({})
+check(vim.tbl_count(kept.effects.default_effects) == 2, "default_effects untouched when not provided")
+
 print("json_parser")
 local json_parser = require("flashback.json_parser")
 local material, err = json_parser.load(configs.defaults.murmurs_path)

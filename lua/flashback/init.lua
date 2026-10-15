@@ -17,6 +17,7 @@ local diagnostics = require("flashback.integrations.diagnostics")
 local todo = require("flashback.integrations.todo")
 local lsp = require("flashback.lsp")
 local i18n = require("flashback.i18n")
+local hijack = require("flashback.hijack")
 
 local M = {}
 
@@ -73,8 +74,30 @@ local function resolve_effects(murmur)
     if out.cursor_harass and (c.screen and c.screen.cursor_harass and c.screen.cursor_harass.enabled) == false then
         out.cursor_harass = nil
     end
+    if out.cursor_grab and (c.screen and c.screen.cursor_grab and c.screen.cursor_grab.enabled) == false then
+        out.cursor_grab = nil
+    end
 
     return out
+end
+
+--- Resolve the display mode and its options for a murmur.
+---@param murmur MurmurItem
+---@return string mode, table display
+local function resolve_display(murmur)
+    local c = cfg()
+    local own = vim.deepcopy(murmur.display or {})
+    local mode = own.mode or c.render.mode or "float"
+    if mode ~= "large" and mode ~= "overlay" then
+        mode = "float"
+    end
+    own.mode = mode
+    if mode == "float" then
+        return mode, own
+    end
+    local display = vim.tbl_deep_extend("force", vim.deepcopy(c.render[mode] or {}), own)
+    display.mode = mode
+    return mode, display
 end
 
 --- Render a murmur with no animation (used for the trap prompt frame).
@@ -138,13 +161,14 @@ function M.emit(opts)
         return nil
     end
 
-    local handle = renderer.render(murmur, { renderer = "float", render = c.render })
+    local run = vim.deepcopy(murmur)
+    run.effects = resolve_effects(murmur)
+    local mode, display = resolve_display(run)
+
+    local handle = renderer.render(run, { renderer = mode, render = c.render, display = display })
     if not handle then
         return nil
     end
-
-    local run = vim.deepcopy(murmur)
-    run.effects = resolve_effects(murmur)
 
     if run.trap and c.trap.enabled then
         render_static(handle, run)
@@ -154,12 +178,22 @@ function M.emit(opts)
         composer.start(run, {
             handle = handle,
             config = c,
+            display = display,
             palette = murmurs.get_palette(),
             glyph_pools = murmurs.get_glyph_pools(),
             on_done = function(h)
                 renderer.close(h)
             end,
         })
+        if mode == "overlay" and c.hijack.enabled then
+            local full = (display.cover or 1.0) >= 0.999
+            if not c.hijack.only_fullscreen or full then
+                hijack.engage(handle)
+                handle.add_on_close(function()
+                    hijack.release(handle)
+                end)
+            end
+        end
     end
 
     stats.bump("emitted")
@@ -225,6 +259,7 @@ function M.stop()
     started = false
     timer.stop()
     trap.disengage(false)
+    hijack.release()
     stop_events()
     trigger.stop_tracking()
     screen.teardown()

@@ -130,6 +130,8 @@ function M.load(path)
             local m = murmur_item.new(item.text, style, tonumber(item.duration) or 3000)
             m.effects = eff
             m.weight = tonumber(item.weight) or 1
+            m.display = (type(item.display) == "table" and not is_nil(item.display)) and vim.deepcopy(item.display)
+                or nil
             m.trap = item.trap == true
             m.unlock_text = type(item.unlock_text) == "string" and item.unlock_text or item.text
             m.when = (type(item.when) == "table" and not is_nil(item.when)) and item.when or nil

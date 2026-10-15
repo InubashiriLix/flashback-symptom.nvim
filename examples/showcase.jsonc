@@ -373,6 +373,96 @@
       "duration": 5000,
       "weight": 0.5,
       "trap": true
+    },
+
+    // ===================== 大窗 / 全屏（large 与 overlay） =====================
+
+    {
+      // large：占屏幕 60% 的大窗，文字居中留白，带影子
+      "text": "你的注意力正在被吃掉",
+      "style": { "fg": "ice", "bg": "#0b1622", "attrs": ["bold"] },
+      "duration": 4200,
+      "display": { "mode": "large", "cover": 0.6, "align": "center", "padding": 4, "border": "rounded" },
+      "effects": {
+        "grow": { "duration": 280 },
+        "typewriter": { "speed": 60 },
+        "shadow": { "dx": 2, "dy": 1, "color": "#001018", "blend": 70 }
+      }
+    },
+    {
+      // overlay：铺满整屏、背景完全不透明，背后代码彻底看不见
+      // 全屏默认会自动夺键，连按两次 <Esc> 才能提前挣脱
+      "text": "看不见了吧？",
+      "style": { "fg": "sun", "bg": "ink", "attrs": ["bold"] },
+      "duration": 3800,
+      "weight": 2,
+      "display": { "mode": "overlay", "cover": 1.0, "padding": 6, "border": "none", "opaque": true },
+      "effects": {
+        "grow": { "duration": 200, "anchor": "center" },
+        "typewriter": { "speed": 55 },
+        "glitch": { "delay": 1200, "color": "rose", "density": 0.2, "pool": "blocks" },
+        "fade": { "delay": 3000, "duration": 700 },
+        "shrink": { "delay": 3000, "duration": 700 }
+      }
+    },
+    {
+      // overlay + wipe：从顶部像窗帘一样展开
+      "text": "刷——",
+      "style": { "fg": "moss", "bg": "void", "attrs": ["bold"] },
+      "duration": 3200,
+      "display": { "mode": "overlay", "cover": 1.0, "padding": 8, "border": "none" },
+      "effects": {
+        "wipe": { "duration": 320, "anchor": "top" },
+        "typewriter": { "speed": 40 }
+      }
+    },
+    {
+      // 半透明全屏：背后代码还隐约可见，压抑但不完全黑
+      "text": "你还在吗？",
+      "style": { "fg": "blood", "bg": "ink" },
+      "duration": 3600,
+      "display": { "mode": "overlay", "cover": 1.0, "opaque": false, "blend": 45, "padding": 5 },
+      "effects": {
+        "glitch": { "color": "rose", "pool": "junk" },
+        "shake": { "amplitude": 1, "frequency": 10 }
+      }
+    },
+
+    // ===================== 光标劫持 =====================
+
+    {
+      // cursor_grab：原地锁死光标（想动动不了），结束后原样还原
+      "text": "光标是我的了",
+      "style": { "fg": "grape" },
+      "duration": 3200,
+      "weight": 0.6,
+      "effects": {
+        "cursor_grab": { "to": "keep", "insert": false },
+        "glitch": { "color": "grape" }
+      }
+    },
+    {
+      // cursor_grab(to=center) + 全屏 + 夺键：最痛的一种
+      "text": "别急，先听我说完",
+      "style": { "fg": "sun", "bg": "#2a0010", "attrs": ["bold"] },
+      "duration": 4200,
+      "weight": 0.4,
+      "display": { "mode": "overlay", "cover": 1.0, "padding": 6, "border": "none" },
+      "effects": {
+        "grow": { "duration": 220 },
+        "cursor_grab": { "to": "center", "insert": false },
+        "typewriter": { "speed": 70 }
+      }
+    },
+    {
+      // 加强版 cursor_harass：更大振幅 + 偶发大跳（记得在 config 里开 screen.cursor_harass）
+      "text": "手抖了吧",
+      "style": { "fg": "amber" },
+      "duration": 3000,
+      "weight": 0.3,
+      "effects": {
+        "cursor_harass": { "interval": 500, "amplitude": 2, "jump": 6, "jump_chance": 0.3, "axes": "col" }
+      }
     }
   ]
 }

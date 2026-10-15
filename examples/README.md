@@ -12,13 +12,17 @@ It demonstrates:
 - `presets` — `calm`, `dreamy`, `horror`, `panic`, `retro`
 - every built-in effect at least once, with parameters:
   `typewriter` `glitch` `decay` `caret` `rainbow` `flicker` `pulse` `shake`
-  `drift` `fade` `shadow` `vignette` `cursor_glow` `cursor_harass`
+  `drift` `fade` `shadow` `grow` `shrink` `wipe` `vignette` `cursor_glow`
+  `cursor_harass` `cursor_grab`
 - combos: typewriter + delayed glitch + caret + fade; rainbow + drift + shadow
   + pulse
 - timeline fields: `delay`, `duration`, `priority`
 - `weight`, multi-line text, legacy `color`
 - `when` tags (`filetypes`, `modes`)
 - `trap` with both the default `unlock_text` and an explicit one
+- `display` modes: a 60% `large` window and full-screen `overlay` takeovers
+  (opaque and semi-transparent), animated with `grow` / `wipe` / `shrink`
+- full-screen keyboard hijack (double `<Esc>` to escape) and cursor grabbing
 
 The murmur texts are Simplified Chinese; swap them for any language you like,
 the schema only constrains the shape.

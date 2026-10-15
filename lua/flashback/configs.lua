@@ -4,6 +4,9 @@
 ---@field jitter number 0..1, random fluctuation ratio applied to interval_ms
 
 ---@class FlashbackRenderConfig
+---@field mode "float"|"large"|"overlay" default display mode for murmurs
+---@field large table defaults for the "large" display mode
+---@field overlay table defaults for the "overlay" display mode
 ---@field position "random"|"corner"|"cursor" where a murmur window pops up
 ---@field corner string corner name used when position == "corner"
 ---@field cursor_offset { row: number, col: number } offset used when position == "cursor"
@@ -58,6 +61,10 @@
 ---@field notify_level "error"|"warn"|"info"|"debug"
 ---@field only_trap boolean
 
+---@class FlashbackHijackConfig
+---@field enabled boolean swallow input while an overlay murmur is on screen
+---@field only_fullscreen boolean restrict the hijack to full-screen overlays
+
 ---@class FlashbackLspConfig
 ---@field enabled boolean inject the schema into jsonls on setup()
 ---@field inject_jsonls boolean merge a json.schemas entry into jsonls (never enables it)
@@ -88,6 +95,7 @@
 ---@field integrations FlashbackIntegrationsConfig
 ---@field stats FlashbackStatsConfig
 ---@field feedback FlashbackFeedbackConfig
+---@field hijack FlashbackHijackConfig
 ---@field lsp FlashbackLspConfig
 ---@field cmds FlashbackCmdsConfig
 
@@ -118,6 +126,21 @@ M.defaults = {
     },
 
     render = {
+        mode = "float",
+        large = {
+            cover = 0.6,
+            align = "center",
+            padding = 2,
+            border = "rounded",
+            opaque = true,
+        },
+        overlay = {
+            cover = 1.0,
+            align = "center",
+            padding = 3,
+            border = "none",
+            opaque = true,
+        },
         position = "random",
         corner = "botright",
         cursor_offset = { row = 1, col = 0 },
@@ -140,9 +163,13 @@ M.defaults = {
             drift = true,
             fade = true,
             shadow = true,
+            grow = true,
+            shrink = true,
+            wipe = true,
             vignette = true,
             cursor_glow = true,
             cursor_harass = true,
+            cursor_grab = true,
         },
         default_effects = {
             typewriter = {},
@@ -173,6 +200,7 @@ M.defaults = {
 
     screen = {
         cursor_harass = { enabled = false },
+        cursor_grab = { enabled = true },
     },
 
     integrations = {
@@ -203,6 +231,11 @@ M.defaults = {
         notify = false,
         notify_level = "info",
         only_trap = false,
+    },
+
+    hijack = {
+        enabled = true,
+        only_fullscreen = true,
     },
 
     lsp = {
@@ -271,6 +304,11 @@ end
 ---@return FlashbackConfig
 function M.setup(opts)
     M.value = deep_merge(M.defaults, opts or {})
+    -- `default_effects` is a set of effect names, not a map to merge into:
+    -- replace it wholesale when the user provides one (so `{}` really clears it).
+    if opts and type(opts.effects) == "table" and opts.effects.default_effects ~= nil then
+        M.value.effects.default_effects = vim.deepcopy(opts.effects.default_effects)
+    end
     return M.value
 end
 

@@ -101,6 +101,7 @@ function M.start(murmur, opts)
         palette = palette,
         glyph_pools = glyph_pools,
         config = cfg,
+        display = opts.display or {},
         text = text_model.new(murmur.text),
         scratch = scratch,
     }
@@ -145,6 +146,9 @@ function M.start(murmur, opts)
             blend = handle.base_blend or 0,
             row_offset = 0,
             col_offset = 0,
+            -- set by size effects (grow / shrink / wipe)
+            cover = nil,
+            anchor = nil,
             screen = {},
             lines = {},
             spans = {},

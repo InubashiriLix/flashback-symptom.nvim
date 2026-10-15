@@ -13,11 +13,13 @@
 重新打出来。
 
 - **合成器驱动特效** —— 统一时钟 + 逐特效时间轴，特效之间互相叠加而不是抢窗口。
-- **14 个内置特效**，分属 文字 / 样式 / 窗口 / 屏幕 四个通道；并提供三阶段 API
+- **18 个内置特效**，分属 文字 / 样式 / 窗口 / 屏幕 四个通道；并提供三阶段 API
   让你注册自己的特效。
+- **小窗 / 大窗 / 全屏** —— 一条 murmur 可以是小浮窗、占屏 60% 的大窗，或者
+  背景不透明、糊满整屏的全屏接管。
 - **声明式素材** —— JSONC，支持调色板、预设、乱码字符池、权重与逐条触发标签。
 - **JSON Schema**，自动注入 `jsonls`。
-- **严格的安全性** —— 只碰自己创建的浮窗，`stop()` 会把一切复原。
+- **严格的安全性** —— 只碰自己创建的窗口，光标一定还原，`stop()` 会把一切复原。
 
 ## 安装
 
@@ -44,6 +46,10 @@ require("flashback").setup({
   timer = { timer_num = 3, interval_ms = 4000, jitter = 0.5 },
 
   render = {
+    mode = "float",             -- "float" | "large" | "overlay"
+    large   = { cover = 0.6, align = "center", padding = 2, border = "rounded" },
+    overlay = { cover = 1.0, align = "center", padding = 3, border = "none",
+                opaque = true },
     position = "random",        -- "random" | "corner" | "cursor"
     corner = "botright",
     cursor_offset = { row = 1, col = 0 },
@@ -91,6 +97,11 @@ require("flashback").setup({
 
   stats = { enabled = true, path = nil, achievements = true },
   feedback = { bell = true, notify = false, notify_level = "info", only_trap = false },
+
+  hijack = {                    -- 全屏 overlay 会吞掉键盘
+    enabled = true,             -- 连按两次 <Esc> 的保命链永远可用
+    only_fullscreen = true,
+  },
 
   lsp = {
     enabled = true,
@@ -203,9 +214,13 @@ fb.is_running()       fb.stats_summary()
 | `drift` | win | 缓慢漂浮 |
 | `fade` | win | 淡出（或淡入） |
 | `shadow` | win | 窗口背后的一层阴影窗 |
+| `grow` | win | 窗口长大到目标尺寸 |
+| `shrink` | win | 窗口缩到没有 |
+| `wipe` | win | 从某条边像窗帘一样揭开 |
 | `vignette` | screen | 屏幕四周变暗 |
 | `cursor_glow` | screen | 跟随光标的光晕 |
 | `cursor_harass` | screen | 骚扰真实光标（默认关！） |
+| `cursor_grab` | screen | 抓取并锁住真实光标，结束后还原 |
 
 每个特效都可以带 `delay` / `duration` 做时间轴，`priority` 决定同通道覆盖顺序。
 
@@ -225,6 +240,46 @@ require("flashback.effects").register("my_fx", {
 ```
 
 特效只往 `frame` / `ctx.text` 里写，窗口由合成器统一应用。
+
+## 显示模式
+
+每条 murmur 由三种显示模式之一绘制：
+
+| mode | 尺寸 | 位置 | 说明 |
+| --- | --- | --- | --- |
+| `float` | 文字尺寸 + 2 | `render.position` | 经典小浮窗 |
+| `large` | 默认占编辑器 60% | `render.position` | 大，但还看得见编辑器的边 |
+| `overlay` | 默认铺满 100% | 居中 | 把背后的一切都盖住 |
+
+全局默认由 `render.mode` 决定，逐条可以覆盖：
+
+```jsonc
+"display": {
+  "mode": "overlay",
+  "cover": 1.0,        // 占编辑器区的比例 0.01~1
+  "align": "center",   // center/top/bottom/left/right/...
+  "padding": 3,        // 文字块四周的留白格数
+  "border": "none",    // 或 rounded/single/...
+  "opaque": true       // false 时会隐约透出背后的代码
+}
+```
+
+`opaque`（默认）会把 `style.bg` 铺满整个窗口，所以 `overlay` 是真的把编辑器
+盖黑。`align` 既决定窗口位置，也决定文字块在窗口内的对齐。
+
+窗口矩形由 `grow` / `shrink` / `wipe` 做动画；`anchor` 决定从哪儿长出来
+（`center` 从中间胀开，`top` 就是窗帘式下拉）。
+
+## 键盘劫持
+
+全屏 `overlay` 出现时（`hijack.enabled`）会吞掉所有按键，真的把你占住；
+murmur 结束时自动放行。
+
+> [!CAUTION]
+> 唯一的出路是硬编码的**连按两次 `<Esc>`**，而且**关不掉**。没有逃生口的
+> 全屏输入抓取就是个坑。
+
+`trap` 永远优先：它生效期间 hijack 不会启动。
 
 ## 触发条件
 
@@ -302,6 +357,7 @@ nvim --headless -l spec/side_effects.lua   # 窗口系统完整性（重点）
 nvim --headless -l spec/jsonc.lua          # JSONC 解析
 nvim --headless -l spec/schema.lua         # schema / 注册表 / 示例 防漂移
 nvim --headless -l spec/lsp.lua            # jsonls 注入（非破坏 + 幂等）
+nvim --headless -l spec/overlay.lua        # 大窗/全屏几何、尺寸动画、夺键、光标抓取
 ```
 
 ## 许可
