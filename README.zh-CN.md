@@ -14,6 +14,10 @@
 > 详见[内容与安全](#内容与安全)。想要中性、功能完整的示例请用
 > [`examples/showcase.jsonc`](./examples/showcase.jsonc)。
 
+> Demo Video:
+
+https://github.com/user-attachments/assets/b04e2e1e-671a-456c-acf7-7d19c0286e99
+
 你写代码的时候，会凭空弹出一些带颜色的「喃喃自语」（murmur）：它们自己打字、
 乱码、闪烁、飘移、叠影子，偶尔还会劫持你的键盘，直到你把提示文字一字不差地
 重新打出来。
